@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'src/presentation/pages/login_page.dart';
+import 'src/features/auth/presentation/pages/login_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,10 +15,9 @@ class MyApp extends StatelessWidget {
       title: 'Cowork App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
       home: const LoginPage(),
     );
   }
 }
-
-// ...existing code...
