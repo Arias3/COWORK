@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +34,9 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                Get.toNamed('/register');
+                Get.toNamed('/login');
               },
-              child: const Text('Regístrate'),
+              child: const Text('Ingresa'),
             ),
           ),
           Positioned(
@@ -63,7 +63,7 @@ class LoginPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Iniciar sesión',
+                      'Registrate',
                       style: TextStyle(
                         color: Color(0xFFF7D86A),
                         fontSize: 32,
@@ -71,17 +71,17 @@ class LoginPage extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: 260,
                       child: TextField(
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
-                            Icons.mail_outline,
+                            Icons.person_outline,
                             color: Color(0xFF3B3576),
                           ),
-                          labelText: 'Usuario',
+                          labelText: 'Nombre',
                           labelStyle: const TextStyle(
                             color: Color.fromARGB(255, 25, 22, 53),
                           ),
@@ -98,7 +98,34 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 260,
+                      child: TextField(
+                        style: const TextStyle(fontSize: 14),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.mail_outline,
+                            color: Color(0xFF3B3576),
+                          ),
+                          labelText: 'Correo electrónico',
+                          labelStyle: const TextStyle(
+                            color: Color.fromARGB(255, 25, 22, 53),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 20,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: 260,
                       child: TextField(
@@ -126,32 +153,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Checkbox(
-                          value: false,
-                          onChanged: (value) {},
-                          activeColor: const Color(0xFF3B3576),
-                        ),
-                        const Text(
-                          'Recuérdame',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Align(
-                      alignment: Alignment.center,
-                      child: const Text(
-                        '¿Olvidaste tu contraseña?',
-                        style: TextStyle(
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
+
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
@@ -166,7 +168,7 @@ class LoginPage extends StatelessWidget {
                         ),
                         onPressed: () {},
                         child: const Text(
-                          'Iniciar sesión',
+                          'Registrarse',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

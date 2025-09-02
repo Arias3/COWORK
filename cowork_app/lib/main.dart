@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'src/features/auth/presentation/pages/login_page.dart';
+import 'src/features/auth/presentation/pages/register_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -8,16 +10,29 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Cowork App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      initialRoute: '/login',
+      getPages: [
+        GetPage(
+          name: '/login',
+          page: () => const LoginPage(),
+          transition: Transition.circularReveal,
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+        GetPage(
+          name: '/register',
+          page: () => const RegisterPage(),
+          transition: Transition.circularReveal,
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      ],
     );
   }
 }
