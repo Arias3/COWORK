@@ -20,7 +20,10 @@ class EnrollCoursePage extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF3B3576)),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF3B3576),
+                    ),
                     onPressed: () => Get.back(),
                   ),
                   const SizedBox(width: 8),
@@ -46,70 +49,87 @@ class EnrollCoursePage extends StatelessWidget {
               const SizedBox(height: 8),
               // Lista de cursos
               Expanded(
-  child: GetBuilder<EnrollCourseController>(
-    builder: (controller) {
-      return ListView.separated(
-        itemCount: controller.cursos.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) {
-          final curso = controller.cursos[i];
-          final seleccionado = controller.seleccionado.value == i;
-          return GestureDetector(
-            onTap: () => controller.seleccionar(i),
-            child: Container(
-              decoration: BoxDecoration(
-                color: seleccionado ? const Color(0xFF7D7BA7) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: seleccionado ? const Color(0xFF3B3576) : Colors.transparent,
-                  width: 2,
+                child: GetBuilder<EnrollCourseController>(
+                  builder: (controller) {
+                    return ListView.separated(
+                      itemCount: controller.cursos.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final curso = controller.cursos[i];
+                        final seleccionado = controller.seleccionado.value == i;
+                        return GestureDetector(
+                          onTap: () => controller.seleccionar(i),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: seleccionado
+                                  ? const Color(0xFF7D7BA7)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: seleccionado
+                                    ? const Color(0xFF3B3576)
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Image.asset(
+                                  curso['img'] ?? '',
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                        Icons.image_not_supported,
+                                        size: 48,
+                                        color: Color(0xFF3B3576),
+                                      ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        curso['nombre'] ?? '',
+                                        style: TextStyle(
+                                          color: seleccionado
+                                              ? Colors.white
+                                              : const Color(0xFF3B3576),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        curso['descripcion'] ?? '',
+                                        style: TextStyle(
+                                          color: seleccionado
+                                              ? Colors.white70
+                                              : const Color(0xFF3B3576),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (seleccionado)
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Image.asset(
-                    curso['img'] ?? '',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 48, color: Color(0xFF3B3576)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          curso['nombre'] ?? '',
-                          style: TextStyle(
-                            color: seleccionado ? Colors.white : const Color(0xFF3B3576),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          curso['descripcion'] ?? '',
-                          style: TextStyle(
-                            color: seleccionado ? Colors.white70 : const Color(0xFF3B3576),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (seleccionado)
-                    const Icon(Icons.check_circle, color: Colors.white),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    },
-  ),
-),
               const SizedBox(height: 8),
               // Botón Inscribirse
               Align(
@@ -121,7 +141,10 @@ class EnrollCoursePage extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
                   ),
                   onPressed: () {
                     showDialog(
@@ -129,7 +152,9 @@ class EnrollCoursePage extends StatelessWidget {
                       barrierDismissible: false,
                       builder: (context) => Dialog(
                         backgroundColor: const Color(0xFFD3D3D3),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(24),
                           child: Column(
@@ -139,7 +164,10 @@ class EnrollCoursePage extends StatelessWidget {
                                 children: [
                                   const Spacer(),
                                   IconButton(
-                                    icon: const Icon(Icons.close, color: Color(0xFF232B50)),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Color(0xFF232B50),
+                                    ),
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                       Get.offAllNamed('/home');
@@ -158,7 +186,11 @@ class EnrollCoursePage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              Icon(Icons.check_circle_outline, size: 56, color: Color(0xFF232B50)),
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 56,
+                                color: Color(0xFF232B50),
+                              ),
                               const SizedBox(height: 16),
                               FilledButton.icon(
                                 style: FilledButton.styleFrom(
@@ -167,7 +199,10 @@ class EnrollCoursePage extends StatelessWidget {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 8,
+                                  ),
                                 ),
                                 onPressed: () {
                                   // Aquí puedes poner lógica para compartir o simplemente volver al home
@@ -175,7 +210,10 @@ class EnrollCoursePage extends StatelessWidget {
                                   Get.offAllNamed('/home');
                                 },
                                 icon: const Icon(Icons.link),
-                                label: const Text('Compartir', style: TextStyle(fontWeight: FontWeight.bold)),
+                                label: const Text(
+                                  'Compartir',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ),

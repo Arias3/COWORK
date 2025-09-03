@@ -8,11 +8,6 @@ import 'src/features/home/presentation/pages/new_course_page.dart';
 import 'src/features/home/presentation/pages/enroll_course_page.dart';
 import 'src/features/home/presentation/controllers/enroll_course_controller.dart';
 
-import 'src/features/auth/presentation/pages/courses_page.dart';
-import 'src/features/auth/presentation/pages/add_course_page.dart';
-import 'src/features/auth/presentation/pages/edit_course_page.dart';
-
-
 void main() {
   Get.put(EnrollCourseController());
   runApp(const MyApp());
@@ -43,38 +38,9 @@ class MyApp extends StatelessWidget {
           transition: Transition.circularReveal,
           transitionDuration: const Duration(milliseconds: 500),
         ),
-        GetPage(
-
-          name: '/home',
-          page: () => HomePage(),
-        ),
-        GetPage(
-          name: '/new-course',
-          page: () => NewCoursePage(),
-        ),
-        GetPage(
-          name: '/enroll-course',
-          page: () => EnrollCoursePage(),
-         ),
-        GetPage(
-          name: '/courses',
-          page: () => const CoursePage(),
-          transition: Transition.circularReveal,
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-        GetPage(
-          name: '/addcourses',
-          page: () => const AddCoursePage(),
-          transition: Transition.circularReveal,
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-        GetPage(
-          name: '/editcourse',
-          page: () => const EditCoursePage(),
-          transition: Transition.circularReveal,
-          transitionDuration: const Duration(milliseconds: 500),
-
-        ),
+        GetPage(name: '/home', page: () => HomePage()),
+        GetPage(name: '/new-course', page: () => NewCoursePage()),
+        GetPage(name: '/enroll-course', page: () => EnrollCoursePage()),
       ],
     );
   }

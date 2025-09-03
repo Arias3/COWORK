@@ -20,36 +20,40 @@ class HomePage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Obx(() => RichText(
-                        text: TextSpan(
-                          children: [
-                            const TextSpan(
-                              text: 'Bienvenido,\n',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                              ),
+                  Obx(
+                    () => RichText(
+                      text: TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'Bienvenido,\n',
+                            style: TextStyle(color: Colors.white, fontSize: 22),
+                          ),
+                          TextSpan(
+                            text: controller.userName.value,
+                            style: const TextStyle(
+                              color: Color(0xFFF7D86A),
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
                             ),
-                            TextSpan(
-                              text: controller.userName.value,
-                              style: const TextStyle(
-                                color: Color(0xFFF7D86A),
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.notifications_none, color: Colors.white),
+                        icon: const Icon(
+                          Icons.notifications_none,
+                          color: Colors.white,
+                        ),
                         onPressed: () {},
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () {
+                          Get.toNamed('/login');
+                        },
                       ),
                     ],
                   ),
@@ -68,17 +72,20 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 8),
               SizedBox(
                 height: 90,
-                child: Obx(() => ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: controller.dictados.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (context, i) {
-                        final curso = controller.dictados[i]; // o controller.inscritos[i]
-                        final nombre = curso['nombre'] ?? '';
-                        final img = curso['img'] ?? '';
-                        return _CursoCard(nombre: nombre, img: img);
-                      },
-                    )),
+                child: Obx(
+                  () => ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: controller.dictados.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final curso =
+                          controller.dictados[i]; // o controller.inscritos[i]
+                      final nombre = curso['nombre'] ?? '';
+                      final img = curso['img'] ?? '';
+                      return _CursoCard(nombre: nombre, img: img);
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 18),
               // Inscrito
@@ -92,19 +99,25 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: Obx(() => GridView.builder(
-                      itemCount: controller.inscritos.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                        childAspectRatio: 1.7,
-                      ),
-                      itemBuilder: (context, i) {
-                        final curso = controller.inscritos[i];
-                        return _CursoCard(nombre: curso['nombre']!, img: curso['img']!);
-                      },
-                    )),
+                child: Obx(
+                  () => GridView.builder(
+                    itemCount: controller.inscritos.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.7,
+                        ),
+                    itemBuilder: (context, i) {
+                      final curso = controller.inscritos[i];
+                      return _CursoCard(
+                        nombre: curso['nombre']!,
+                        img: curso['img']!,
+                      );
+                    },
+                  ),
+                ),
               ),
               // Botones
               Row(
@@ -117,12 +130,15 @@ class HomePage extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 8,
+                      ),
                     ),
                     onPressed: () {
-                        Get.toNamed('/new-course');
-                        },
-                        child: const Text('crear'),
+                      Get.toNamed('/new-course');
+                    },
+                    child: const Text('crear'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
@@ -132,12 +148,15 @@ class HomePage extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 8,
+                      ),
                     ),
                     onPressed: () {
-                        Get.toNamed('/enroll-course');
-                        },
-                        child: const Text('Inscribirse'),
+                      Get.toNamed('/enroll-course');
+                    },
+                    child: const Text('Inscribirse'),
                   ),
                   const SizedBox(width: 8),
                   FloatingActionButton(
