@@ -1,15 +1,15 @@
-import '../../data/repositories_impl/local_course_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../domain/usecases/course_usecase.dart';
-import '../controllers/course_controller.dart';
-import '../../domain/repositories/i_course_repository.dart';
+import '../controllers/login_controller.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final AuthController authController = Get.put(AuthController());
+    final usuarioController = TextEditingController();
+    final contrasenaController = TextEditingController();
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 28, 34),
       body: Stack(
@@ -79,6 +79,7 @@ class LoginPage extends StatelessWidget {
                     SizedBox(
                       width: 260,
                       child: TextField(
+                        controller: usuarioController,
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
@@ -106,6 +107,7 @@ class LoginPage extends StatelessWidget {
                     SizedBox(
                       width: 260,
                       child: TextField(
+                        controller: contrasenaController,
                         style: const TextStyle(fontSize: 14),
                         obscureText: true,
                         decoration: InputDecoration(
@@ -169,7 +171,10 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          Get.offAllNamed('/home');
+                          authController.usuario.value = usuarioController.text;
+                          authController.contrasena.value =
+                              contrasenaController.text;
+                          authController.login();
                         },
                         child: const Text(
                           'Iniciar sesión',
@@ -181,41 +186,6 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Botón verde para pruebas
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (!Get.isRegistered<ICourseRepository>()) {
-                            Get.put<ICourseRepository>(LocalCourseRepository());
-                          }
-                          if (!Get.isRegistered<CourseUseCase>()) {
-                            Get.put(
-                              CourseUseCase(Get.find<ICourseRepository>()),
-                            );
-                          }
-                          if (!Get.isRegistered<CourseController>()) {
-                            Get.put(CourseController());
-                          }
-                          Get.toNamed('/addcourses');
-                        },
-                        child: const Text(
-                          'Ir a Cursos (prueba)',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
