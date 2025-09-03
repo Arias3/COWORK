@@ -1,0 +1,69 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../controllers/course_controller.dart';
+
+class CoursePage extends StatelessWidget {
+  const CoursePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final CourseController courseController = Get.find();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cursos'),
+        backgroundColor: Colors.purple[400],
+      ),
+      body: Obx(() {
+        final courses = courseController.courses;
+        if (courses.isEmpty) {
+          return const Center(
+            child: Text(
+              'No hay cursos guardados',
+              style: TextStyle(color: Colors.purple, fontSize: 18),
+            ),
+          );
+        }
+        return ListView.builder(
+          itemCount: courses.length,
+          itemBuilder: (context, index) {
+            final course = courses[index];
+            return Card(
+              color: Colors.purple[100 + (index % 4) * 100],
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: ListTile(
+                title: Text(
+                  course.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  course.description,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  onPressed: () async {
+                    await courseController.deleteCourse(course);
+                  },
+                ),
+                onTap: () {
+                  Get.toNamed('/editcourse', arguments: [course]);
+                },
+              ),
+            );
+          },
+        );
+      }),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.purple,
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Get.toNamed('/addcourses');
+        },
+      ),
+    );
+  }
+}

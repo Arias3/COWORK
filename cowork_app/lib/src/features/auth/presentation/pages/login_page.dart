@@ -1,5 +1,9 @@
+import '../../data/repositories_impl/local_course_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../domain/usecases/course_usecase.dart';
+import '../controllers/course_controller.dart';
+import '../../domain/repositories/i_course_repository.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -169,6 +173,42 @@ class LoginPage extends StatelessWidget {
                           'Iniciar sesión',
                           style: TextStyle(
                             fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Botón verde para pruebas
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          if (!Get.isRegistered<ICourseRepository>()) {
+                            Get.put<ICourseRepository>(LocalCourseRepository());
+                          }
+                          if (!Get.isRegistered<CourseUseCase>()) {
+                            Get.put(
+                              CourseUseCase(Get.find<ICourseRepository>()),
+                            );
+                          }
+                          if (!Get.isRegistered<CourseController>()) {
+                            Get.put(CourseController());
+                          }
+                          Get.toNamed('/addcourses');
+                        },
+                        child: const Text(
+                          'Ir a Cursos (prueba)',
+                          style: TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
