@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'src/features/auth/presentation/pages/login_page.dart';
 import 'src/features/auth/presentation/pages/register_page.dart';
+
 import 'src/features/home/presentation/pages/home_page.dart';
 import 'src/features/home/presentation/pages/new_course_page.dart';
 import 'src/features/home/presentation/pages/enroll_course_page.dart';
 import 'src/features/home/presentation/controllers/enroll_course_controller.dart';
+
+import 'src/features/auth/presentation/pages/courses_page.dart';
+import 'src/features/auth/presentation/pages/add_course_page.dart';
+import 'src/features/auth/presentation/pages/edit_course_page.dart';
+
 
 void main() {
   Get.put(EnrollCourseController());
@@ -38,6 +44,7 @@ class MyApp extends StatelessWidget {
           transitionDuration: const Duration(milliseconds: 500),
         ),
         GetPage(
+
           name: '/home',
           page: () => HomePage(),
         ),
@@ -48,6 +55,25 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/enroll-course',
           page: () => EnrollCoursePage(),
+         ),
+        GetPage(
+          name: '/courses',
+          page: () => const CoursePage(),
+          transition: Transition.circularReveal,
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+        GetPage(
+          name: '/addcourses',
+          page: () => const AddCoursePage(),
+          transition: Transition.circularReveal,
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+        GetPage(
+          name: '/editcourse',
+          page: () => const EditCoursePage(),
+          transition: Transition.circularReveal,
+          transitionDuration: const Duration(milliseconds: 500),
+
         ),
       ],
     );
