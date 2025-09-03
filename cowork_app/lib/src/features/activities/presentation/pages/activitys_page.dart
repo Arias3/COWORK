@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/activity_controller.dart';
+import '../../../activities/presentation/controllers/activity_controller.dart';
 
 class ActivityPage extends StatelessWidget {
   const ActivityPage({super.key});
@@ -11,7 +11,7 @@ class ActivityPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cursos'),
+        title: const Text('Actividades'),
         backgroundColor: Colors.purple[400],
       ),
       body: Obx(() {
@@ -19,7 +19,7 @@ class ActivityPage extends StatelessWidget {
         if (activitys.isEmpty) {
           return const Center(
             child: Text(
-              'No hay cursos guardados',
+              'No hay actividades guardadas',
               style: TextStyle(color: Colors.purple, fontSize: 18),
             ),
           );

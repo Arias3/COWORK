@@ -1,6 +1,6 @@
 import '../../domain/repositories/i_activity_repository.dart';
-import '../datasources/i_remote_activity_source.dart';
-import '../../domain/models/activity.dart';
+import '../datasources/local/i_remote_activity_source.dart';
+import '../../../activities/domain/models/activity.dart';
 
 class ActivityRepository implements IActivityRepository {
   late IActivitySource userSource;

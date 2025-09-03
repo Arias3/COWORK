@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'src/features/auth/presentation/pages/login_page.dart';
 import 'src/features/auth/presentation/pages/register_page.dart';
-import 'src/features/auth/presentation/pages/activitys_page.dart';
-import 'src/features/auth/presentation/pages/add_activity_page.dart';
-import 'src/features/auth/presentation/pages/edit_activity_page.dart';
+import 'src/features/activities/presentation/pages/activitys_page.dart';
+import 'src/features/activities/presentation/pages/add_activity_page.dart';
+import 'src/features/activities/presentation/pages/edit_activity_page.dart';
 
 void main() {
   runApp(const MyApp());

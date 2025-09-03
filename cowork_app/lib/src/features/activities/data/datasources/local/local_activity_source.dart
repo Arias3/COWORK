@@ -1,5 +1,5 @@
-import '../../../domain/models/activity.dart';
-import '../i_remote_activity_source.dart';
+import '../../../../activities/domain/models/activity.dart';
+import 'i_remote_activity_source.dart';
 
 class LocalActivitySource implements IActivitySource {
   final List<Activity> _activitys = <Activity>[];

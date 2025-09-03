@@ -1,46 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:loggy/loggy.dart';
+import '../../../activities/presentation/controllers/activity_controller.dart';
 
-import '../../domain/models/activity.dart';
-import '../controllers/activity_controller.dart';
-
-class EditActivityPage extends StatefulWidget {
-  const EditActivityPage({super.key});
+class AddActivityPage extends StatefulWidget {
+  const AddActivityPage({super.key});
 
   @override
-  State<EditActivityPage> createState() => _EditActivityPageState();
+  State<AddActivityPage> createState() => _AddActivityPageState();
 }
 
-class _EditActivityPageState extends State<EditActivityPage> {
-  Activity activity = Get.arguments[0];
-  final controllerActivityName = TextEditingController();
-  final controllerActivityDesc = TextEditingController();
-  final controllerActivityMembers = TextEditingController();
+class _AddActivityPageState extends State<AddActivityPage> {
+  final controllerName = TextEditingController();
+  final controllerDesc = TextEditingController();
+  final controllerMembers = TextEditingController();
 
-  late List<String> membersList;
-
-  @override
-  void initState() {
-    super.initState();
-    controllerActivityName.text = activity.name;
-    controllerActivityDesc.text = activity.description;
-    membersList = List<String>.from(activity.members);
-  }
+  List<String> membersList = [];
+  DateTime? selectedDate;
 
   @override
   Widget build(BuildContext context) {
     ActivityController activityController = Get.find();
-    logInfo("Update page Activity $Activity");
+
     return Scaffold(
-      appBar: AppBar(title: Text(activity.name)),
+      appBar: AppBar(title: const Text('New Activity')),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             const SizedBox(height: 20),
             TextField(
-              controller: controllerActivityName,
+              controller: controllerName,
               decoration: const InputDecoration(
                 labelText: 'Activity Name',
                 border: OutlineInputBorder(
@@ -50,7 +39,7 @@ class _EditActivityPageState extends State<EditActivityPage> {
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: controllerActivityDesc,
+              controller: controllerDesc,
               decoration: const InputDecoration(
                 labelText: 'Activity Description',
                 border: OutlineInputBorder(
@@ -59,13 +48,39 @@ class _EditActivityPageState extends State<EditActivityPage> {
               ),
             ),
             const SizedBox(height: 20),
+            TextField(
+              readOnly: true,
+              controller: TextEditingController(
+                text: selectedDate != null
+                    ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
+                    : "",
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Fecha de entrega',
+                border: OutlineInputBorder(),
+              ),
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() {
+                    selectedDate = picked;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: controllerActivityMembers,
+                    controller: controllerMembers,
                     decoration: const InputDecoration(
-                      labelText: 'Agregar miembro',
+                      labelText: 'Member Name',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),
@@ -76,18 +91,18 @@ class _EditActivityPageState extends State<EditActivityPage> {
                 IconButton(
                   icon: const Icon(Icons.add, color: Colors.purple),
                   onPressed: () {
-                    String member = controllerActivityMembers.text.trim();
+                    String member = controllerMembers.text.trim();
                     if (member.isNotEmpty) {
                       setState(() {
                         membersList.add(member);
-                        controllerActivityMembers.clear();
+                        controllerMembers.clear();
                       });
                     }
                   },
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -109,27 +124,28 @@ class _EditActivityPageState extends State<EditActivityPage> {
             ),
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
-                  flex: 2,
                   child: FilledButton.tonal(
                     onPressed: () async {
-                      activity.name = controllerActivityName.text;
-                      activity.description = controllerActivityDesc.text;
-                      activity.members = membersList;
                       try {
-                        await activityController.updateActivity(activity);
-                        Get.back();
+                        await activityController.addActivity(
+                          controllerName.text,
+                          controllerDesc.text,
+                          membersList,
+                          selectedDate ?? DateTime.now(),
+                        );
+                        Get.toNamed('/activitys');
                       } catch (err) {
                         Get.snackbar(
                           "Error",
                           err.toString(),
+                          icon: const Icon(Icons.error, color: Colors.red),
                           snackPosition: SnackPosition.BOTTOM,
                         );
                       }
                     },
-                    child: const Text("Update"),
+                    child: const Text("Save"),
                   ),
                 ),
               ],

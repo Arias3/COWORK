@@ -1,4 +1,4 @@
-import '../models/activity.dart';
+import '../../../activities/domain/models/activity.dart';
 
 abstract class IActivityRepository {
   Future<List<Activity>> getActivitys();

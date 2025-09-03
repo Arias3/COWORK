@@ -1,9 +1,9 @@
-import '../../data/repositories_impl/local_activity_repository.dart';
+import '../../../activities/data/repositories_impl/local_activity_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../domain/usecases/activity_usecase.dart';
-import '../controllers/activity_controller.dart';
-import '../../domain/repositories/i_activity_repository.dart';
+import '../../../activities/domain/usecases/activity_usecase.dart';
+import '../../../activities/presentation/controllers/activity_controller.dart';
+import '../../../activities/domain/repositories/i_activity_repository.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});

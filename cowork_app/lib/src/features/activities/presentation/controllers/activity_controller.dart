@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
-import '../../domain/models/activity.dart';
+import '../../../activities/domain/models/activity.dart';
 import '../../domain/usecases/activity_usecase.dart';
 
 class ActivityController extends GetxController {
@@ -24,24 +24,29 @@ class ActivityController extends GetxController {
     isLoading.value = false;
   }
 
-  addActivity(String name, String desc, List<String> members) async {
+  Future<void> addActivity(
+    String name,
+    String desc,
+    List<String> members,
+    DateTime deliveryDate,
+  ) async {
     logInfo("ActivityController: Add Activity");
-    await activityUseCase.addActivity(name, desc, members.join(','));
+    await activityUseCase.addActivity(name, desc, members, deliveryDate);
     getActivitys();
   }
 
-  updateActivity(Activity Activity) async {
+  Future<void> updateActivity(Activity activity) async {
     logInfo("ActivityController: Update Activity");
-    await activityUseCase.updateActivity(Activity);
+    await activityUseCase.updateActivity(activity);
     await getActivitys();
   }
 
-  Future<void> deleteActivity(Activity Activity) async {
-    await activityUseCase.deleteActivity(Activity);
+  Future<void> deleteActivity(Activity activity) async {
+    await activityUseCase.deleteActivity(activity);
     getActivitys();
   }
 
-  void deleteActivitys() async {
+  Future<void> deleteActivitys() async {
     logInfo("ActivityController: Delete all Activitys");
     isLoading.value = true;
     await activityUseCase.deleteActivitys();

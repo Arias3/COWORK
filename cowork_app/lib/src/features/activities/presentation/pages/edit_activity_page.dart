@@ -1,34 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/activity_controller.dart';
+import 'package:loggy/loggy.dart';
 
-class AddActivityPage extends StatefulWidget {
-  const AddActivityPage({super.key});
+import '../../../activities/domain/models/activity.dart';
+import '../../../activities/presentation/controllers/activity_controller.dart';
+
+class EditActivityPage extends StatefulWidget {
+  const EditActivityPage({super.key});
 
   @override
-  State<AddActivityPage> createState() => _AddActivityPageState();
+  State<EditActivityPage> createState() => _EditActivityPageState();
 }
 
-class _AddActivityPageState extends State<AddActivityPage> {
-  final controllerName = TextEditingController();
-  final controllerDesc = TextEditingController();
-  final controllerMembers = TextEditingController();
+class _EditActivityPageState extends State<EditActivityPage> {
+  Activity activity = Get.arguments[0];
+  final controllerActivityName = TextEditingController();
+  final controllerActivityDesc = TextEditingController();
+  final controllerActivityMembers = TextEditingController();
 
-  List<String> membersList = [];
+  late List<String> membersList;
+
+  @override
+  void initState() {
+    super.initState();
+    controllerActivityName.text = activity.name;
+    controllerActivityDesc.text = activity.description;
+    membersList = List<String>.from(activity.members);
+  }
 
   @override
   Widget build(BuildContext context) {
     ActivityController activityController = Get.find();
-
+    logInfo("Update page Activity $Activity");
     return Scaffold(
-      appBar: AppBar(title: const Text('New Activity')),
+      appBar: AppBar(title: Text(activity.name)),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             const SizedBox(height: 20),
             TextField(
-              controller: controllerName,
+              controller: controllerActivityName,
               decoration: const InputDecoration(
                 labelText: 'Activity Name',
                 border: OutlineInputBorder(
@@ -38,7 +50,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: controllerDesc,
+              controller: controllerActivityDesc,
               decoration: const InputDecoration(
                 labelText: 'Activity Description',
                 border: OutlineInputBorder(
@@ -51,9 +63,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: controllerMembers,
+                    controller: controllerActivityMembers,
                     decoration: const InputDecoration(
-                      labelText: 'Member Name',
+                      labelText: 'Agregar miembro',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),
@@ -64,18 +76,18 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 IconButton(
                   icon: const Icon(Icons.add, color: Colors.purple),
                   onPressed: () {
-                    String member = controllerMembers.text.trim();
+                    String member = controllerActivityMembers.text.trim();
                     if (member.isNotEmpty) {
                       setState(() {
                         membersList.add(member);
-                        controllerMembers.clear();
+                        controllerActivityMembers.clear();
                       });
                     }
                   },
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -97,27 +109,27 @@ class _AddActivityPageState extends State<AddActivityPage> {
             ),
             const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
+                  flex: 2,
                   child: FilledButton.tonal(
                     onPressed: () async {
+                      activity.name = controllerActivityName.text;
+                      activity.description = controllerActivityDesc.text;
+                      activity.members = membersList;
                       try {
-                        await activityController.addActivity(
-                          controllerName.text,
-                          controllerDesc.text,
-                          membersList,
-                        );
-                        Get.toNamed('/activitys');
+                        await activityController.updateActivity(activity);
+                        Get.back();
                       } catch (err) {
                         Get.snackbar(
                           "Error",
                           err.toString(),
-                          icon: const Icon(Icons.error, color: Colors.red),
                           snackPosition: SnackPosition.BOTTOM,
                         );
                       }
                     },
-                    child: const Text("Save"),
+                    child: const Text("Update"),
                   ),
                 ),
               ],
