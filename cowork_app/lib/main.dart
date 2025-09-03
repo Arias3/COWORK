@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'src/features/auth/presentation/pages/login_page.dart';
 import 'src/features/auth/presentation/pages/register_page.dart';
-import 'src/features/auth/presentation/pages/courses_page.dart';
-import 'src/features/auth/presentation/pages/add_course_page.dart';
-import 'src/features/auth/presentation/pages/edit_course_page.dart';
+import 'src/features/auth/presentation/pages/activitys_page.dart';
+import 'src/features/auth/presentation/pages/add_activity_page.dart';
+import 'src/features/auth/presentation/pages/edit_activity_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,20 +36,20 @@ class MyApp extends StatelessWidget {
           transitionDuration: const Duration(milliseconds: 500),
         ),
         GetPage(
-          name: '/courses',
-          page: () => const CoursePage(),
+          name: '/activitys',
+          page: () => const ActivityPage(),
           transition: Transition.circularReveal,
           transitionDuration: const Duration(milliseconds: 500),
         ),
         GetPage(
-          name: '/addcourses',
-          page: () => const AddCoursePage(),
+          name: '/addactivitys',
+          page: () => const AddActivityPage(),
           transition: Transition.circularReveal,
           transitionDuration: const Duration(milliseconds: 500),
         ),
         GetPage(
-          name: '/editcourse',
-          page: () => const EditCoursePage(),
+          name: '/editactivity',
+          page: () => const EditActivityPage(),
           transition: Transition.circularReveal,
           transitionDuration: const Duration(milliseconds: 500),
         ),

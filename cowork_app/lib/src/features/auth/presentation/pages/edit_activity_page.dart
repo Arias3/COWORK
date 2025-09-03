@@ -1,36 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/course_controller.dart';
+import 'package:loggy/loggy.dart';
 
-class AddCoursePage extends StatefulWidget {
-  const AddCoursePage({super.key});
+import '../../domain/models/activity.dart';
+import '../controllers/activity_controller.dart';
+
+class EditActivityPage extends StatefulWidget {
+  const EditActivityPage({super.key});
 
   @override
-  State<AddCoursePage> createState() => _AddCoursePageState();
+  State<EditActivityPage> createState() => _EditActivityPageState();
 }
 
-class _AddCoursePageState extends State<AddCoursePage> {
-  final controllerName = TextEditingController();
-  final controllerDesc = TextEditingController();
-  final controllerMembers = TextEditingController();
+class _EditActivityPageState extends State<EditActivityPage> {
+  Activity activity = Get.arguments[0];
+  final controllerActivityName = TextEditingController();
+  final controllerActivityDesc = TextEditingController();
+  final controllerActivityMembers = TextEditingController();
 
-  List<String> membersList = [];
+  late List<String> membersList;
+
+  @override
+  void initState() {
+    super.initState();
+    controllerActivityName.text = activity.name;
+    controllerActivityDesc.text = activity.description;
+    membersList = List<String>.from(activity.members);
+  }
 
   @override
   Widget build(BuildContext context) {
-    CourseController courseController = Get.find();
-
+    ActivityController activityController = Get.find();
+    logInfo("Update page Activity $Activity");
     return Scaffold(
-      appBar: AppBar(title: const Text('New Course')),
+      appBar: AppBar(title: Text(activity.name)),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             const SizedBox(height: 20),
             TextField(
-              controller: controllerName,
+              controller: controllerActivityName,
               decoration: const InputDecoration(
-                labelText: 'Course Name',
+                labelText: 'Activity Name',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
@@ -38,9 +50,9 @@ class _AddCoursePageState extends State<AddCoursePage> {
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: controllerDesc,
+              controller: controllerActivityDesc,
               decoration: const InputDecoration(
-                labelText: 'Course Description',
+                labelText: 'Activity Description',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
@@ -51,9 +63,9 @@ class _AddCoursePageState extends State<AddCoursePage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: controllerMembers,
+                    controller: controllerActivityMembers,
                     decoration: const InputDecoration(
-                      labelText: 'Member Name',
+                      labelText: 'Agregar miembro',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),
@@ -64,18 +76,18 @@ class _AddCoursePageState extends State<AddCoursePage> {
                 IconButton(
                   icon: const Icon(Icons.add, color: Colors.purple),
                   onPressed: () {
-                    String member = controllerMembers.text.trim();
+                    String member = controllerActivityMembers.text.trim();
                     if (member.isNotEmpty) {
                       setState(() {
                         membersList.add(member);
-                        controllerMembers.clear();
+                        controllerActivityMembers.clear();
                       });
                     }
                   },
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -97,27 +109,27 @@ class _AddCoursePageState extends State<AddCoursePage> {
             ),
             const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
+                  flex: 2,
                   child: FilledButton.tonal(
                     onPressed: () async {
+                      activity.name = controllerActivityName.text;
+                      activity.description = controllerActivityDesc.text;
+                      activity.members = membersList;
                       try {
-                        await courseController.addCourse(
-                          controllerName.text,
-                          controllerDesc.text,
-                          membersList,
-                        );
-                        Get.toNamed('/courses');
+                        await activityController.updateActivity(activity);
+                        Get.back();
                       } catch (err) {
                         Get.snackbar(
                           "Error",
                           err.toString(),
-                          icon: const Icon(Icons.error, color: Colors.red),
                           snackPosition: SnackPosition.BOTTOM,
                         );
                       }
                     },
-                    child: const Text("Save"),
+                    child: const Text("Update"),
                   ),
                 ),
               ],

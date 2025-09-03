@@ -1,44 +1,44 @@
 import 'package:loggy/loggy.dart';
-import '../../domain/models/course.dart';
+import '../../domain/models/activity.dart';
 import 'package:http/http.dart' as http;
 
-import 'i_remote_course_source.dart';
+import 'i_remote_activity_source.dart';
 
-class RemoteCourseSource implements ICourseSource {
+class RemoteActivitySource implements IActivitySource {
   final http.Client httpClient;
 
-  RemoteCourseSource(this.httpClient);
+  RemoteActivitySource(this.httpClient);
 
   @override
-  Future<List<Course>> getCourses() async {
-    List<Course> courses = [];
+  Future<List<Activity>> getActivitys() async {
+    List<Activity> activitys = [];
 
-    return Future.value(courses);
+    return Future.value(activitys);
   }
 
   @override
-  Future<bool> addCourse(Course course) async {
-    logInfo("Web service, Adding Course $course");
+  Future<bool> addActivity(Activity activity) async {
+    logInfo("Web service, Adding Activity $activity");
     return Future.value(true);
   }
 
   @override
-  Future<bool> updateCourse(Course course) async {
-    logInfo("Web service, Updating Course with id $course");
+  Future<bool> updateActivity(Activity activity) async {
+    logInfo("Web service, Updating Activity with id $activity");
     return Future.value(true);
   }
 
   @override
-  Future<bool> deleteCourse(Course course) async {
-    logInfo("Web service, Deleting Course with id $course");
+  Future<bool> deleteActivity(Activity activity) async {
+    logInfo("Web service, Deleting Activity with id $activity");
     return Future.value(true);
   }
 
   @override
-  Future<bool> deleteCourses() async {
-    List<Course> courses = await getCourses();
-    for (var course in courses) {
-      await deleteCourse(course);
+  Future<bool> deleteActivitys() async {
+    List<Activity> activitys = await getActivitys();
+    for (var activity in activitys) {
+      await deleteActivity(activity);
     }
     return Future.value(true);
   }

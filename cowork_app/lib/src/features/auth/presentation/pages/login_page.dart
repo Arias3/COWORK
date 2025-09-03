@@ -1,9 +1,9 @@
-import '../../data/repositories_impl/local_course_repository.dart';
+import '../../data/repositories_impl/local_activity_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../domain/usecases/course_usecase.dart';
-import '../controllers/course_controller.dart';
-import '../../domain/repositories/i_course_repository.dart';
+import '../../domain/usecases/activity_usecase.dart';
+import '../controllers/activity_controller.dart';
+import '../../domain/repositories/i_activity_repository.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -192,21 +192,21 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          if (!Get.isRegistered<ICourseRepository>()) {
-                            Get.put<ICourseRepository>(LocalCourseRepository());
+                          if (!Get.isRegistered<IActivityRepository>()) {
+                            Get.put<IActivityRepository>(LocalActivityRepository());
                           }
-                          if (!Get.isRegistered<CourseUseCase>()) {
+                          if (!Get.isRegistered<ActivityUseCase>()) {
                             Get.put(
-                              CourseUseCase(Get.find<ICourseRepository>()),
+                              ActivityUseCase(Get.find<IActivityRepository>()),
                             );
                           }
-                          if (!Get.isRegistered<CourseController>()) {
-                            Get.put(CourseController());
+                          if (!Get.isRegistered<ActivityController>()) {
+                            Get.put(ActivityController());
                           }
-                          Get.toNamed('/addcourses');
+                          Get.toNamed('/addactivitys');
                         },
                         child: const Text(
-                          'Ir a Cursos (prueba)',
+                          'Ir a actividades (prueba)',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

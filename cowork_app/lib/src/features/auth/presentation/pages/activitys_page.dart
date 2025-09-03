@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/course_controller.dart';
+import '../controllers/activity_controller.dart';
 
-class CoursePage extends StatelessWidget {
-  const CoursePage({super.key});
+class ActivityPage extends StatelessWidget {
+  const ActivityPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final CourseController courseController = Get.find();
+    final ActivityController activityController = Get.find();
 
     return Scaffold(
       appBar: AppBar(
@@ -15,8 +15,8 @@ class CoursePage extends StatelessWidget {
         backgroundColor: Colors.purple[400],
       ),
       body: Obx(() {
-        final courses = courseController.courses;
-        if (courses.isEmpty) {
+        final activitys = activityController.activitys;
+        if (activitys.isEmpty) {
           return const Center(
             child: Text(
               'No hay cursos guardados',
@@ -25,32 +25,32 @@ class CoursePage extends StatelessWidget {
           );
         }
         return ListView.builder(
-          itemCount: courses.length,
+          itemCount: activitys.length,
           itemBuilder: (context, index) {
-            final course = courses[index];
+            final activity = activitys[index];
             return Card(
               color: Colors.purple[100 + (index % 4) * 100],
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ListTile(
                 title: Text(
-                  course.name,
+                  activity.name,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 subtitle: Text(
-                  course.description,
+                  activity.description,
                   style: const TextStyle(color: Colors.white70),
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.white),
                   onPressed: () async {
-                    await courseController.deleteCourse(course);
+                    await activityController.deleteActivity(activity);
                   },
                 ),
                 onTap: () {
-                  Get.toNamed('/editcourse', arguments: [course]);
+                  Get.toNamed('/editActivity', arguments: [activity]);
                 },
               ),
             );
@@ -61,7 +61,7 @@ class CoursePage extends StatelessWidget {
         backgroundColor: Colors.purple,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
-          Get.toNamed('/addcourses');
+          Get.toNamed('/addActivitys');
         },
       ),
     );
