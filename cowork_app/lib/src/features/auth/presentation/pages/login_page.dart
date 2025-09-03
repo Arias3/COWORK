@@ -168,7 +168,9 @@ class LoginPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Get.offAllNamed('/home');
+                        },
                         child: const Text(
                           'Iniciar sesión',
                           style: TextStyle(
