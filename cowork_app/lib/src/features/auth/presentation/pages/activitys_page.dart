@@ -50,7 +50,7 @@ class ActivityPage extends StatelessWidget {
                   },
                 ),
                 onTap: () {
-                  Get.toNamed('/editActivity', arguments: [activity]);
+                  Get.toNamed('/editactivity', arguments: [activity]);
                 },
               ),
             );
@@ -61,7 +61,7 @@ class ActivityPage extends StatelessWidget {
         backgroundColor: Colors.purple,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
-          Get.toNamed('/addActivitys');
+          Get.toNamed('/addactivitys');
         },
       ),
     );
