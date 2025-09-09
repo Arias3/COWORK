@@ -23,7 +23,7 @@ void main() {
 
   // --- AUTH ---
   // Usamos un repo dummy (con admin/admin) para pruebas locales
-  Get.put<IAuthRepository>(DummyAuthRepository());
+  Get.put<IAuthRepository>(AuthRepositoryLocal());
   Get.put(AuthenticationUseCase(Get.find<IAuthRepository>()));
   Get.put(AuthenticationController(Get.find<AuthenticationUseCase>()));
 

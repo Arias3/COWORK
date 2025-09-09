@@ -7,10 +7,20 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Recuperamos el controller desde Get
-    final AuthenticationController authController = Get.find();
+    final AuthenticationController authController = Get.put(
+      AuthenticationController(Get.find()),
+    );
     final usuarioController = TextEditingController();
     final contrasenaController = TextEditingController();
+
+    // Precargar credenciales si existen
+    authController.getSavedCredentials().then((saved) {
+      usuarioController.text = saved['email'] ?? '';
+      contrasenaController.text = saved['password'] ?? '';
+      if (saved['email']!.isNotEmpty) {
+        authController.rememberMe.value = true;
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 28, 34),
@@ -138,10 +148,14 @@ class LoginPage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Checkbox(
-                          value: false,
-                          onChanged: (value) {},
-                          activeColor: const Color(0xFF3B3576),
+                        Obx(
+                          () => Checkbox(
+                            value: authController.rememberMe.value,
+                            onChanged: (value) {
+                              authController.rememberMe.value = value ?? false;
+                            },
+                            activeColor: const Color(0xFF3B3576),
+                          ),
                         ),
                         const Text(
                           'Recuérdame',
