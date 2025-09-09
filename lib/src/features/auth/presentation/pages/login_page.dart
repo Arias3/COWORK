@@ -7,9 +7,11 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AuthController authController = Get.put(AuthController());
+    // Recuperamos el controller desde Get
+    final AuthenticationController authController = Get.find();
     final usuarioController = TextEditingController();
     final contrasenaController = TextEditingController();
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 28, 34),
       body: Stack(
@@ -170,12 +172,34 @@ class LoginPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          authController.usuario.value = usuarioController.text;
-                          authController.contrasena.value =
-                              contrasenaController.text;
-                          authController.login();
+                        onPressed: () async {
+                          final success = await authController.login(
+                            usuarioController.text.trim(),
+                            contrasenaController.text.trim(),
+                          );
+
+                          if (success) {
+                            Get.offAllNamed('/home');
+                          } else {
+                            // Mostrar error como snackbar
+                            if (authController.errorMessage.isNotEmpty) {
+                              Get.snackbar(
+                                'Error de inicio de sesión',
+                                authController.errorMessage.value,
+                                backgroundColor: const Color(0xFFF7D86A),
+                                colorText: const Color.fromARGB(
+                                  255,
+                                  197,
+                                  45,
+                                  45,
+                                ),
+                                snackPosition: SnackPosition.TOP,
+                                duration: const Duration(seconds: 3),
+                              );
+                            }
+                          }
                         },
+
                         child: const Text(
                           'Iniciar sesión',
                           style: TextStyle(
