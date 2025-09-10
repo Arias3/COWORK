@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_overrides
+
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
@@ -42,13 +44,10 @@ class ActivityController extends GetxController {
     DateTime deliveryDate,
   ) async {
     logInfo("ActivityController: Add Activity");
-    await activityUseCase.addActivity(
-      categoryId,
-      name,
-      desc,
-      deliveryDate,
-    );
-    await getActivities(categoryId: categoryId); // 🔹 refresca solo esa categoría
+    await activityUseCase.addActivity(categoryId, name, desc, deliveryDate);
+    await getActivities(
+      categoryId: categoryId,
+    ); // 🔹 refresca solo esa categoría
   }
 
   Future<void> updateActivity(Activity activity) async {

@@ -337,7 +337,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
               leading: const Icon(Icons.category, color: Colors.orange),
               title: const Text('Ver Categorías'),
               subtitle: Text('${curso.categorias.length} categorías asignadas'),
-              onTap: () => verCategorias(curso),
+              onTap: () => Get.toNamed('/categories'),
             ),
             ListTile(
               leading: const Icon(Icons.people, color: Colors.green),

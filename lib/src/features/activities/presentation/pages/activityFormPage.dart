@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -5,14 +7,11 @@ import '../../../activities/domain/models/activity.dart';
 import '../controllers/activity_controller.dart';
 
 class ActivityFormPage extends StatefulWidget {
-  final int categoryId; // 🔹 Necesario para vincular la actividad a la categoría
+  final int
+  categoryId; // 🔹 Necesario para vincular la actividad a la categoría
   final Activity? activity; // 🔹 Si es null → creación, si no → edición
 
-  const ActivityFormPage({
-    super.key,
-    required this.categoryId,
-    this.activity,
-  });
+  const ActivityFormPage({super.key, required this.categoryId, this.activity});
 
   @override
   State<ActivityFormPage> createState() => _ActivityFormPageState();
@@ -30,8 +29,9 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.activity?.name ?? '');
-    descController =
-        TextEditingController(text: widget.activity?.description ?? '');
+    descController = TextEditingController(
+      text: widget.activity?.description ?? '',
+    );
     deliveryDate = widget.activity?.deliveryDate ?? DateTime.now();
   }
 

@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters
+
 import '../../domain/entities/category.dart';
 
 class CategoryModel extends Category {
@@ -8,12 +10,12 @@ class CategoryModel extends Category {
     required MetodoAgrupacion metodoAgrupacion,
     required int maxMiembros,
   }) : super(
-          id: id,
-          cursoId: cursoId,
-          nombre: nombre,
-          metodoAgrupacion: metodoAgrupacion,
-          maxMiembros: maxMiembros,
-        );
+         id: id,
+         cursoId: cursoId,
+         nombre: nombre,
+         metodoAgrupacion: metodoAgrupacion,
+         maxMiembros: maxMiembros,
+       );
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(

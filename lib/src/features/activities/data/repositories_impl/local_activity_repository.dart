@@ -8,6 +8,7 @@ class LocalActivityRepository implements IActivityRepository {
   Future<List<Activity>> getActivities() async => _activitys;
 
   @override
+  // ignore: non_constant_identifier_names
   Future<bool> addActivity(Activity Activity) async {
     _activitys.add(Activity);
     return true;
@@ -23,11 +24,11 @@ class LocalActivityRepository implements IActivityRepository {
     return false;
   }
 
- @override
-Future<bool> deleteActivity(Activity activity) async {
-  _activitys.removeWhere((c) => c.id == activity.id);
-  return true;
-}
+  @override
+  Future<bool> deleteActivity(Activity activity) async {
+    _activitys.removeWhere((c) => c.id == activity.id);
+    return true;
+  }
 
   @override
   Future<bool> deleteActivities() async {
