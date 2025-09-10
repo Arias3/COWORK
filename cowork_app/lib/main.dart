@@ -6,7 +6,11 @@ import 'src/features/activities/presentation/pages/activitys_page.dart';
 import 'src/features/activities/presentation/pages/add_activity_page.dart';
 import 'src/features/activities/presentation/pages/edit_activity_page.dart';
 
+import 'src/features/home/presentation/pages/home_page.dart';
+import 'src/features/home/presentation/controllers/enroll_course_controller.dart';
+
 void main() {
+  Get.put(EnrollCourseController());
   runApp(const MyApp());
 }
 

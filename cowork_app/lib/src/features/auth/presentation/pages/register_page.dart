@@ -166,7 +166,9 @@ class RegisterPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Get.offAllNamed('/home');
+                        },
                         child: const Text(
                           'Registrarse',
                           style: TextStyle(

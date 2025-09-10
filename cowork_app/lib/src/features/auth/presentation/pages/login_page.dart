@@ -1,15 +1,16 @@
-import '../../../activities/data/repositories_impl/local_activity_repository.dart';
+import '../../data/repositories_impl/local_course_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../activities/domain/usecases/activity_usecase.dart';
-import '../../../activities/presentation/controllers/activity_controller.dart';
-import '../../../activities/domain/repositories/i_activity_repository.dart';
+import '../controllers/login_controller.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final AuthController authController = Get.put(AuthController());
+    final usuarioController = TextEditingController();
+    final contrasenaController = TextEditingController();
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 29, 28, 34),
       body: Stack(
@@ -79,6 +80,7 @@ class LoginPage extends StatelessWidget {
                     SizedBox(
                       width: 260,
                       child: TextField(
+                        controller: usuarioController,
                         style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
@@ -106,6 +108,7 @@ class LoginPage extends StatelessWidget {
                     SizedBox(
                       width: 260,
                       child: TextField(
+                        controller: contrasenaController,
                         style: const TextStyle(fontSize: 14),
                         obscureText: true,
                         decoration: InputDecoration(
@@ -168,7 +171,12 @@ class LoginPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          authController.usuario.value = usuarioController.text;
+                          authController.contrasena.value =
+                              contrasenaController.text;
+                          authController.login();
+                        },
                         child: const Text(
                           'Iniciar sesión',
                           style: TextStyle(
@@ -179,41 +187,6 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Botón verde para pruebas
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (!Get.isRegistered<IActivityRepository>()) {
-                            Get.put<IActivityRepository>(LocalActivityRepository());
-                          }
-                          if (!Get.isRegistered<ActivityUseCase>()) {
-                            Get.put(
-                              ActivityUseCase(Get.find<IActivityRepository>()),
-                            );
-                          }
-                          if (!Get.isRegistered<ActivityController>()) {
-                            Get.put(ActivityController());
-                          }
-                          Get.toNamed('/addactivitys');
-                        },
-                        child: const Text(
-                          'Ir a actividades (prueba)',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
