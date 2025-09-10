@@ -5,7 +5,7 @@ class LocalActivityRepository implements IActivityRepository {
   final List<Activity> _activitys = [];
 
   @override
-  Future<List<Activity>> getActivitys() async => _activitys;
+  Future<List<Activity>> getActivities() async => _activitys;
 
   @override
   Future<bool> addActivity(Activity Activity) async {
@@ -30,7 +30,7 @@ Future<bool> deleteActivity(Activity activity) async {
 }
 
   @override
-  Future<bool> deleteActivitys() async {
+  Future<bool> deleteActivities() async {
     _activitys.clear();
     return true;
   }

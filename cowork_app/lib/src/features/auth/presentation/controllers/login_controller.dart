@@ -5,7 +5,7 @@ class AuthController extends GetxController {
   RxString contrasena = ''.obs;
 
   void login() {
-    if (usuario.value == 'admin' && contrasena.value == 'admin') {
+    if (usuario.value == '' && contrasena.value == '') {
       Get.toNamed('/home');
     } else {
       Get.snackbar('Error de ingreso', 'Credenciales incorrectas');

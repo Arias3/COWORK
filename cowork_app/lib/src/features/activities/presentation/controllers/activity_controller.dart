@@ -5,52 +5,69 @@ import '../../../activities/domain/models/activity.dart';
 import '../../domain/usecases/activity_usecase.dart';
 
 class ActivityController extends GetxController {
-  final RxList<Activity> _activitys = <Activity>[].obs;
+  final RxList<Activity> _activities = <Activity>[].obs;
   final ActivityUseCase activityUseCase = Get.find();
   final RxBool isLoading = false.obs;
-  List<Activity> get activitys => _activitys;
+
+  List<Activity> get activities => _activities;
+
+  /// Guardamos el categoryId actual para filtrar actividades
+  int? currentCategoryId;
 
   @override
   void onInit() {
-    getActivitys();
     super.onInit();
+    // ⚠️ No cargamos nada aún hasta que tengamos un categoryId
   }
 
-  getActivitys() async {
-    logInfo("ActivityController: Getting Activitys");
+  /// Cargar actividades, opcionalmente filtradas por categoría
+  Future<void> getActivities({int? categoryId}) async {
+    logInfo("ActivityController: Getting activities");
     isLoading.value = true;
-    final result = await activityUseCase.getActivitys();
-    _activitys.assignAll(result);
+
+    currentCategoryId = categoryId ?? currentCategoryId;
+
+    final result = await activityUseCase.getActivities(
+      categoryId: currentCategoryId,
+    );
+
+    _activities.assignAll(result);
     isLoading.value = false;
   }
 
   Future<void> addActivity(
+    int categoryId, // 🔹 obligatorio ahora
     String name,
     String desc,
-    List<String> members,
     DateTime deliveryDate,
   ) async {
     logInfo("ActivityController: Add Activity");
-    await activityUseCase.addActivity(name, desc, members, deliveryDate);
-    getActivitys();
+    await activityUseCase.addActivity(
+      categoryId,
+      name,
+      desc,
+      deliveryDate,
+    );
+    await getActivities(categoryId: categoryId); // 🔹 refresca solo esa categoría
   }
 
   Future<void> updateActivity(Activity activity) async {
     logInfo("ActivityController: Update Activity");
     await activityUseCase.updateActivity(activity);
-    await getActivitys();
+    await getActivities(categoryId: activity.categoryId);
   }
 
   Future<void> deleteActivity(Activity activity) async {
+    logInfo("ActivityController: Delete Activity");
     await activityUseCase.deleteActivity(activity);
-    getActivitys();
+    await getActivities(categoryId: activity.categoryId);
   }
 
-  Future<void> deleteActivitys() async {
-    logInfo("ActivityController: Delete all Activitys");
+  Future<void> deleteActivities({int? categoryId}) async {
+    logInfo("ActivityController: Delete all activities");
     isLoading.value = true;
-    await activityUseCase.deleteActivitys();
-    await getActivitys();
+    await activityUseCase.deleteActivities();
+    await getActivities(categoryId: categoryId);
     isLoading.value = false;
   }
 }

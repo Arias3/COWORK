@@ -1,7 +1,7 @@
 import '../../../activities/domain/models/activity.dart';
 
 abstract class IActivityRepository {
-  Future<List<Activity>> getActivitys();
+  Future<List<Activity>> getActivities();
 
   Future<bool> addActivity(Activity p);
 
@@ -9,5 +9,5 @@ abstract class IActivityRepository {
 
   Future<bool> deleteActivity(Activity p);
 
-  Future<bool> deleteActivitys();
+  Future<bool> deleteActivities();
 }

@@ -15,7 +15,7 @@ class ActivityPage extends StatelessWidget {
         backgroundColor: Colors.purple[400],
       ),
       body: Obx(() {
-        final activitys = activityController.activitys;
+        final activitys = activityController.activities;
         if (activitys.isEmpty) {
           return const Center(
             child: Text(
@@ -61,7 +61,7 @@ class ActivityPage extends StatelessWidget {
         backgroundColor: Colors.purple,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
-          Get.toNamed('/addactivitys');
+          Get.toNamed('/addactivity');
         },
       ),
     );

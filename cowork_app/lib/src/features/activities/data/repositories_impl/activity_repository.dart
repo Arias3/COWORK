@@ -8,7 +8,7 @@ class ActivityRepository implements IActivityRepository {
   ActivityRepository(this.userSource);
 
   @override
-  Future<List<Activity>> getActivitys() async => await userSource.getActivitys();
+  Future<List<Activity>> getActivities() async => await userSource.getActivitys();
 
   @override
   Future<bool> addActivity(Activity user) async =>
@@ -23,5 +23,5 @@ class ActivityRepository implements IActivityRepository {
       await userSource.deleteActivity(user);
 
   @override
-  Future<bool> deleteActivitys() async => await userSource.deleteActivitys();
+  Future<bool> deleteActivities() async => await userSource.deleteActivitys();
 }
