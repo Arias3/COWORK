@@ -16,4 +16,8 @@ class NewCourseController extends GetxController {
   void eliminarEstudiante(int index) {
     estudiantes.removeAt(index);
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> fcb8c3e71d5f95ff4539ee2aaa26f49285910e5f
