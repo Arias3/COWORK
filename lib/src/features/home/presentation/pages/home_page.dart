@@ -51,13 +51,9 @@ class HomePage extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings, color: Colors.white),
-<<<<<<< HEAD
-                        onPressed: () {},
-=======
                         onPressed: () {
                           Get.toNamed('/login');
                         },
->>>>>>> 2a9562dc3188cb2726924cc408cc651a89ae6499
                       ),
                     ],
                   ),
