@@ -57,8 +57,6 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      
-
       if (widget.activity == null) {
         // Crear nueva actividad vinculada a la categoría actual
         activityController.addActivity(
@@ -70,7 +68,7 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
       } else {
         // Actualizar actividad existente
         final updated = widget.activity!.copyWith(
-          categoryId: widget.activity!.categoryId, // 🔹 mantenemos vínculo
+          categoryId: widget.activity!.categoryId,
           name: nameController.text,
           description: descController.text,
           deliveryDate: deliveryDate ?? widget.activity!.deliveryDate,
@@ -78,7 +76,8 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
         activityController.updateActivity(updated);
       }
 
-      Get.back(); // Cierra el formulario
+      // 🔹 Al volver, CategoryFormPage (con Obx) se refresca automáticamente
+      Get.back();
     }
   }
 

@@ -2,7 +2,7 @@ enum MetodoAgrupacion { random, selfAssigned, manual }
 
 class Category {
   final int? id;
-  final int cursoId; // si quieres probar sin cursos, lo puedes hacer opcional
+  final int cursoId;
   final String nombre;
   final MetodoAgrupacion metodoAgrupacion;
   final int maxMiembros;
