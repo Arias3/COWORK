@@ -36,6 +36,7 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
     final id = box.length + 1;
     usuario.id = id;
     await box.put(id, usuario);
+    await box.flush();
     return id;
   }
 
@@ -43,12 +44,14 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
   Future<void> updateUsuario(Usuario usuario) async {
     final box = HiveHelper.usuariosBoxInstance;
     await box.put(usuario.id, usuario);
+    await box.flush();
   }
 
   @override
   Future<void> deleteUsuario(int id) async {
     final box = HiveHelper.usuariosBoxInstance;
     await box.delete(id);
+    await box.flush();
   }
 
   @override

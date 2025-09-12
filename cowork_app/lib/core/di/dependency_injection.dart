@@ -15,8 +15,6 @@ import '../../../src/features/home/presentation/controllers/new_course_controlle
 
 class DependencyInjection {
   static Future<void> init() async {
-    // Inicializar Hive
-    await HiveHelper.initHive();
 
     // Repositories
     Get.lazyPut<UsuarioRepository>(() => UsuarioRepositoryImpl());

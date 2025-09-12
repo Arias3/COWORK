@@ -57,6 +57,7 @@ class CursoRepositoryImpl implements CursoRepository {
     final id = box.length + 1;
     curso.id = id;
     await box.put(id, curso);
+    await box.flush();
     return id;
   }
 
@@ -64,12 +65,14 @@ class CursoRepositoryImpl implements CursoRepository {
   Future<void> updateCurso(CursoDomain curso) async {
     final box = HiveHelper.cursosBoxInstance;
     await box.put(curso.id, curso);
+    await box.flush();
   }
 
   @override
   Future<void> deleteCurso(int id) async {
     final box = HiveHelper.cursosBoxInstance;
     await box.delete(id);
+    await box.flush();
     
     // También eliminar inscripciones relacionadas
     final inscripcionesBox = HiveHelper.inscripcionesBoxInstance;
@@ -80,6 +83,7 @@ class CursoRepositoryImpl implements CursoRepository {
     
     for (var inscripcionId in inscripcionesAEliminar) {
       await inscripcionesBox.delete(inscripcionId);
+      await box.flush();
     }
   }
 }

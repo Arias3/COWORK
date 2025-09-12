@@ -59,6 +59,7 @@ class HiveHelper {
 
       for (var usuario in usuarios) {
         await usuariosBoxInstance.put(usuario.id, usuario);
+        await usuariosBoxInstance.flush();
       }
     }
 
@@ -99,6 +100,7 @@ class HiveHelper {
 
       for (var curso in cursos) {
         await cursosBoxInstance.put(curso.id, curso);
+        await cursosBoxInstance.flush();
       }
     }
 
@@ -111,6 +113,7 @@ class HiveHelper {
 
       for (var inscripcion in inscripciones) {
         await inscripcionesBoxInstance.put(inscripcion.id, inscripcion);
+        await inscripcionesBoxInstance.flush();
       }
     }
   }

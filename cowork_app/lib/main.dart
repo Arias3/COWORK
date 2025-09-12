@@ -9,10 +9,13 @@ import 'src/features/home/presentation/pages/new_course_page.dart';
 import 'src/features/home/presentation/pages/enroll_course_page.dart';
 
 // Import dependency injection
-import 'core/di/dependency_injection.dart'; // Ajusta la ruta según tu estructura
+import 'core/di/dependency_injection.dart'; 
+
+import 'core/data/database/hive_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await HiveHelper.initHive();
   await DependencyInjection.init();
   runApp(const MyApp());
 }

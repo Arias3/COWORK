@@ -39,6 +39,7 @@ class InscripcionRepositoryImpl implements InscripcionRepository {
     final id = box.length + 1;
     inscripcion.id = id;
     await box.put(id, inscripcion);
+    await box.flush();
     return id;
   }
 
@@ -48,6 +49,7 @@ class InscripcionRepositoryImpl implements InscripcionRepository {
     final inscripcion = await getInscripcion(usuarioId, cursoId);
     if (inscripcion != null) {
       await box.delete(inscripcion.id);
+      await box.flush();
     }
   }
 
