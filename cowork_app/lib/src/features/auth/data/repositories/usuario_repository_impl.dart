@@ -1,0 +1,75 @@
+import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/usuario_repository.dart';
+import '../../../../../core/data/database/hive_helper.dart';
+
+
+
+
+class UsuarioRepositoryImpl implements UsuarioRepository {
+  @override
+  Future<List<Usuario>> getUsuarios() async {
+    final box = HiveHelper.usuariosBoxInstance;
+    return box.values.toList();
+  }
+
+  @override
+  Future<Usuario?> getUsuarioById(int id) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    return box.get(id);
+  }
+
+  @override
+  Future<Usuario?> getUsuarioByEmail(String email) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    try {
+      return box.values.firstWhere(
+        (usuario) => usuario.email.toLowerCase() == email.toLowerCase(),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<int> createUsuario(Usuario usuario) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    final id = box.length + 1;
+    usuario.id = id;
+    await box.put(id, usuario);
+    return id;
+  }
+
+  @override
+  Future<void> updateUsuario(Usuario usuario) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    await box.put(usuario.id, usuario);
+  }
+
+  @override
+  Future<void> deleteUsuario(int id) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    await box.delete(id);
+  }
+
+  @override
+  Future<bool> existeEmail(String email) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    return box.values.any(
+      (usuario) => usuario.email.toLowerCase() == email.toLowerCase()
+    );
+  }
+
+  @override
+  Future<Usuario?> login(String email, String password) async {
+    final box = HiveHelper.usuariosBoxInstance;
+    try {
+      return box.values.firstWhere(
+        (usuario) => 
+          usuario.email.toLowerCase() == email.toLowerCase() && 
+          usuario.password == password
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+}

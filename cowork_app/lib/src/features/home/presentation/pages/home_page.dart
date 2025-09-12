@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
+import '../../domain/entities/curso_entity.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,7 +9,6 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<HomeController>(
-      init: HomeController(),
       builder: (controller) => Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: _buildAppBar(controller),
@@ -28,33 +28,16 @@ class HomePage extends StatelessWidget {
           CircleAvatar(
             radius: 22,
             backgroundColor: Colors.blue.withOpacity(0.1),
-            child: controller.userAvatar.value.isNotEmpty
-                ? ClipOval(
-                    child: Image.asset(
-                      controller.userAvatar.value,
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Text(
-                          controller.userName.value[0].toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                : Text(
-                    controller.userName.value[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
+            child: Text(
+              controller.authController.currentUser.value?.nombre?.isNotEmpty == true
+                  ? controller.authController.currentUser.value!.nombre![0].toUpperCase()
+                  : 'U',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Column(
@@ -69,7 +52,7 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               Text(
-                controller.userName.value,
+                controller.authController.currentUser.value?.nombre ?? 'Usuario',
                 style: const TextStyle(
                   fontSize: 18,
                   color: Colors.black,
@@ -217,7 +200,7 @@ class HomePage extends StatelessWidget {
           child: _buildStatCard(
             title: 'Estudiantes',
             value: controller.dictados
-                .fold(0, (sum, curso) => sum + curso.estudiantes)
+                .fold(0, (sum, curso) => sum + curso.estudiantesNombres.length)
                 .toString(),
             icon: Icons.people,
             color: Colors.orange,
@@ -495,7 +478,7 @@ class HomePage extends StatelessWidget {
               title: 'No estás inscrito en cursos',
               subtitle: 'Explora y únete a cursos interesantes para aprender',
               actionText: 'Explorar Cursos',
-              onAction: controller.inscribirse,
+              onAction: () => _mostrarDialogoInscripcion(controller),
               color: Colors.green,
             );
           }
@@ -506,7 +489,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCursosGrid(List<Curso> cursos, HomeController controller, {required bool isDictado}) {
+  Widget _buildCursosGrid(List<CursoDomain> cursos, HomeController controller, {required bool isDictado}) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -524,7 +507,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCursoCard(Curso curso, HomeController controller, {required bool isDictado}) {
+  Widget _buildCursoCard(CursoDomain curso, HomeController controller, {required bool isDictado}) {
     return GestureDetector(
       onTap: () {
         if (!isDictado) {
@@ -567,55 +550,30 @@ class HomePage extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Imagen de fondo
+                    // Imagen de fondo por defecto
                     Container(
                       width: double.infinity,
                       height: double.infinity,
                       child: ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                        child: curso.imagen.isNotEmpty
-                            ? Image.asset(
-                                curso.imagen,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: isDictado 
-                                            ? [Colors.blue[300]!, Colors.purple[300]!]
-                                            : [Colors.green[300]!, Colors.teal[300]!],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.school, 
-                                        size: 40, 
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isDictado 
-                                        ? [Colors.blue[300]!, Colors.purple[300]!]
-                                        : [Colors.green[300]!, Colors.teal[300]!],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.school, 
-                                    size: 40, 
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isDictado 
+                                  ? [Colors.blue[300]!, Colors.purple[300]!]
+                                  : [Colors.green[300]!, Colors.teal[300]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.school, 
+                              size: 40, 
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     // Overlay gradient
@@ -638,7 +596,7 @@ class HomePage extends StatelessWidget {
                         top: 12,
                         right: 12,
                         child: GestureDetector(
-                          onTap: () => controller.mostrarMenuCurso(curso, Get.context!),
+                          onTap: () => _mostrarMenuCurso(curso, controller),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -730,7 +688,7 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${curso.estudiantes}',
+                              '${curso.estudiantesNombres.length}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -766,6 +724,190 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _mostrarMenuCurso(CursoDomain curso, HomeController controller) {
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    curso.nombre,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    leading: const Icon(Icons.edit, color: Colors.blue),
+                    title: const Text('Editar Curso'),
+                    onTap: () {
+                      Get.back();
+                      Get.snackbar(
+                        'Información',
+                        'Funcionalidad de edición próximamente',
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.people, color: Colors.green),
+                    title: const Text('Ver Estudiantes'),
+                    subtitle: Text('${curso.estudiantesNombres.length} estudiantes'),
+                    onTap: () {
+                      Get.back();
+                      _mostrarEstudiantes(curso);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.share, color: Colors.purple),
+                    title: const Text('Compartir Código'),
+                    subtitle: Text('Código: ${curso.codigoRegistro ?? 'N/A'}'),
+                    onTap: () {
+                      Get.back();
+                      Get.snackbar(
+                        'Código de Registro',
+                        'Código: ${curso.codigoRegistro ?? 'N/A'}',
+                        backgroundColor: Colors.purple,
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 5),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text('Eliminar Curso'),
+                    onTap: () {
+                      Get.back();
+                      controller.eliminarCurso(curso);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarEstudiantes(CursoDomain curso) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('Estudiantes de ${curso.nombre}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: curso.estudiantesNombres.isEmpty
+              ? const Text('No hay estudiantes inscritos')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: curso.estudiantesNombres.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blue.withOpacity(0.1),
+                        child: Text(
+                          curso.estudiantesNombres[index][0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(curso.estudiantesNombres[index]),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogoInscripcion(HomeController controller) {
+    final TextEditingController codigoController = TextEditingController();
+    
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.login, color: Colors.green),
+            const SizedBox(width: 8),
+            const Text('Inscribirse a Curso'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Ingresa el código de registro del curso:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: codigoController,
+              decoration: const InputDecoration(
+                labelText: 'Código de registro',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.key),
+              ),
+              textCapitalization: TextCapitalization.characters,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              if (codigoController.text.trim().isEmpty) {
+                Get.snackbar(
+                  'Error',
+                  'Por favor ingresa un código de registro',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+              Get.back();
+              controller.inscribirseEnCurso(codigoController.text.trim());
+            },
+            child: const Text('Inscribirse'),
+          ),
+        ],
       ),
     );
   }
@@ -934,7 +1076,7 @@ class HomePage extends StatelessWidget {
             )
           : FloatingActionButton.extended(
               key: const ValueKey('inscritos'),
-              onPressed: controller.inscribirse,
+              onPressed: () => _mostrarDialogoInscripcion(controller),
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.search),

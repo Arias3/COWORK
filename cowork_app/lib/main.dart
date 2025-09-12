@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+// Import pages
 import 'src/features/auth/presentation/pages/login_page.dart';
 import 'src/features/auth/presentation/pages/register_page.dart';
-
 import 'src/features/home/presentation/pages/home_page.dart';
 import 'src/features/home/presentation/pages/new_course_page.dart';
 import 'src/features/home/presentation/pages/enroll_course_page.dart';
-import 'src/features/home/presentation/controllers/enroll_course_controller.dart';
 
-void main() {
-  Get.put(EnrollCourseController());
+// Import dependency injection
+import 'core/di/dependency_injection.dart'; // Ajusta la ruta según tu estructura
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DependencyInjection.init();
   runApp(const MyApp());
 }
 
@@ -38,9 +42,9 @@ class MyApp extends StatelessWidget {
           transition: Transition.circularReveal,
           transitionDuration: const Duration(milliseconds: 500),
         ),
-        GetPage(name: '/home', page: () => HomePage()),
-        GetPage(name: '/new-course', page: () => NewCoursePage()),
-        GetPage(name: '/enroll-course', page: () => EnrollCoursePage()),
+        GetPage(name: '/home', page: () => const HomePage()),
+        GetPage(name: '/new-course', page: () => const NewCoursePage()),
+        GetPage(name: '/enroll-course', page: () => const EnrollCoursePage()),
       ],
     );
   }
