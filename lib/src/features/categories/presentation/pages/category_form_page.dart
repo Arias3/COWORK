@@ -6,6 +6,7 @@ import '../controllers/category_controller.dart';
 import '../../../activities/presentation/controllers/activity_controller.dart';
 import '../../domain/entities/category.dart';
 import '../../../activities/domain/models/activity.dart';
+import '../../../activities/presentation/pages/activityFormPage.dart';
 
 class CategoryFormPage extends StatefulWidget {
   final Category? category;
@@ -144,29 +145,37 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
                 ),
                 const SizedBox(height: 10),
                 Expanded(
-                  child: activities.isEmpty
-                      ? const Text("No hay actividades aún")
-                      : ListView.builder(
-                          itemCount: activities.length,
-                          itemBuilder: (context, index) {
-                            final activity = activities[index];
-                            return Card(
-                              child: ListTile(
-                                title: Text(activity.name),
-                                subtitle: Text(activity.description),
-                                onTap: () {
-                                  Get.toNamed(
-                                    '/addactivity', // ✅ usa la misma página, cambia solo el argumento
-                                    arguments: {
-                                      "categoryId": widget.category!.id,
-                                      "activity": activity,
-                                    },
-                                  );
+                  child: Obx(() {
+                    final activities = activityController.activities
+                        .where((a) => a.categoryId == widget.category!.id)
+                        .toList();
+
+                    if (activities.isEmpty) {
+                      return const Text("No hay actividades aún");
+                    }
+
+                    return ListView.builder(
+                      itemCount: activities.length,
+                      itemBuilder: (context, index) {
+                        final activity = activities[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(activity.name),
+                            subtitle: Text(activity.description),
+                            onTap: () {
+                              Get.toNamed(
+                                '/addactivity',
+                                arguments: {
+                                  "categoryId": widget.category!.id,
+                                  "activity": activity,
                                 },
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  }),
                 ),
               ],
             ],
@@ -174,17 +183,35 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
         ),
       ),
       // 🔹 Botón para agregar actividad si la categoría existe
+      
       floatingActionButton: widget.category != null
-          ? FloatingActionButton(
-              onPressed: () {
-                Get.toNamed(
-                  '/addactivity',
-                  arguments: {"categoryId": widget.category!.id},
-                );
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
+    ? FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (_) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: ActivityFormPage(
+                categoryId: widget.category!.id!,
+              ),
+            ),
+          ).then((_) {
+            // 🔹 Recargar actividades al cerrar el modal
+            activityController.getActivities();
+          });
+        },
+        child: const Icon(Icons.add),
+      )
+    : null,
+
+      
+
     );
   }
 }

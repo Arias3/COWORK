@@ -76,7 +76,7 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
         activityController.updateActivity(updated);
       }
 
-      // 🔹 Al volver, CategoryFormPage (con Obx) se refresca automáticamente
+      
       Get.back();
     }
   }
