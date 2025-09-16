@@ -5,8 +5,7 @@ import '../../domain/entities/curso_entity.dart';
 import '../../../categories/presentation/pages/category_list_page.dart';
 
 class HomePage extends StatelessWidget {
-  HomePage({super.key});
-  final HomeController controller = Get.put(HomeController());
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +36,9 @@ class HomePage extends StatelessWidget {
                             .currentUser
                             .value
                             ?.nombre
-                            .isNotEmpty ==
+                            ?.isNotEmpty ==
                         true
-                    ? controller.authController.currentUser.value!.nombre[0]
+                    ? controller.authController.currentUser.value!.nombre![0]
                           .toUpperCase()
                     : 'U',
                 style: const TextStyle(
@@ -311,48 +310,124 @@ class HomePage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
+                      Icon(
+                        Icons.school,
+                        size: 18,
+                        color: controller.selectedTab.value == 0
+                            ? Colors.white
+                            : Colors.grey[600],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white),
-                        onPressed: () {
-                          Get.toNamed('/login');
-                        },
+                      const SizedBox(width: 6),
+                      Text(
+                        'Dictados',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: controller.selectedTab.value == 0
+                              ? Colors.white
+                              : Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // Dictados
-              const Text(
-                'Dictados',
-                style: TextStyle(
-                  color: Color(0xFF3B3576),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
                 ),
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 90,
-                child: Obx(
-                  () => ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: controller.dictados.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) {
-                      final curso =
-                          controller.dictados[i]; // o controller.inscritos[i]
-                      final nombre = curso['nombre'] ?? '';
-                      final img = curso['img'] ?? '';
-                      return _CursoCard(nombre: nombre, img: img);
-                    },
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => controller.changeTab(1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: controller.selectedTab.value == 1
+                        ? Colors.green
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: controller.selectedTab.value == 1
+                        ? [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.library_books,
+                        size: 18,
+                        color: controller.selectedTab.value == 1
+                            ? Colors.white
+                            : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Inscritos',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: controller.selectedTab.value == 1
+                              ? Colors.white
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabContent(HomeController controller) {
+    return Obx(() {
+      switch (controller.selectedTab.value) {
+        case 0:
+          return _buildDictadosSection(controller);
+        case 1:
+          return _buildInscritosSection(controller);
+        default:
+          return _buildDictadosSection(controller);
+      }
+    });
+  }
+
+  Widget _buildDictadosSection(HomeController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Cursos Dictados',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            Obx(
+              () => Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${controller.dictados.length} cursos',
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -528,7 +603,7 @@ class HomePage extends StatelessWidget {
                 child: Stack(
                   children: [
                     // Imagen de fondo por defecto
-                    SizedBox(
+                    Container(
                       width: double.infinity,
                       height: double.infinity,
                       child: ClipRRect(
@@ -768,12 +843,13 @@ class HomePage extends StatelessWidget {
                       _mostrarEstudiantes(curso);
                     },
                   ),
+
                   ListTile(
                     leading: const Icon(Icons.people, color: Colors.green),
-                    title: const Text('Ver Categorias'),
+                    title: const Text('Ver Categorías'),
                     onTap: () {
                       Get.back();
-                      Get.to(() => CategoryListPage(curso: curso));
+                      Get.toNamed('/categories', arguments: curso);
                     },
                   ),
                   ListTile(
@@ -912,21 +988,59 @@ class HomePage extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      width: 120,
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFB74D),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(img, width: 48, height: 48, fit: BoxFit.contain),
-          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Icon(icon, size: 48, color: color),
+          ),
+          const SizedBox(height: 20),
           Text(
-            nombre,
+            title,
             style: const TextStyle(
-              color: Color(0xFF3B3576),
+              fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.add),
+            label: Text(actionText),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 0,
             ),
           ),
         ],
