@@ -1,4 +1,5 @@
 import '../../domain/entities/category.dart';
+import '../../domain/entities/metodo_agrupacion.dart';
 
 class CategoryModel extends Category {
   CategoryModel({

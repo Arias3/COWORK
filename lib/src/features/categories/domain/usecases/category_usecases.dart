@@ -19,27 +19,37 @@ class UpdateCategory {
   final CategoryRepository repository;
   UpdateCategory(this.repository);
 
-  Future<int> call(Category category) => repository.updateCategory(category);
+  Future<bool> call(Category category) => repository.updateCategory(category);
 }
 
 class DeleteCategory {
   final CategoryRepository repository;
   DeleteCategory(this.repository);
 
-  Future<int> call(int id) => repository.deleteCategory(id);
+  Future<bool> call(int id) => repository.deleteCategory(id);
 }
 
-/// 🔹 Agregador de todos los casos de uso
+class GetCategoriesByCurso {
+  final CategoryRepository repository;
+  GetCategoriesByCurso(this.repository);
+
+  Future<List<Category>> call(int cursoId) =>
+      repository.getCategoriesByCurso(cursoId);
+}
+
+/// 🔹 Agregador
 class CategoryUseCases {
   final CreateCategory createCategory;
   final GetCategories getCategories;
   final UpdateCategory updateCategory;
   final DeleteCategory deleteCategory;
+  final GetCategoriesByCurso getCategoriesByCurso;
 
   CategoryUseCases({
     required this.createCategory,
     required this.getCategories,
     required this.updateCategory,
     required this.deleteCategory,
+    required this.getCategoriesByCurso,
   });
 }

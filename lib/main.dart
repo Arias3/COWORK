@@ -1,45 +1,30 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:loggy/loggy.dart';
+
+
+//pages
 import 'src/features/auth/presentation/pages/login_page.dart';
 import 'src/features/auth/presentation/pages/register_page.dart';
-import 'src/features/activities/presentation/pages/activities_page.dart';
-import 'src/features/activities/presentation/pages/activityFormPage.dart';
 import 'src/features/home/presentation/pages/home_page.dart';
-import 'src/features/home/presentation/controllers/enroll_course_controller.dart';
-import 'src/features/home/presentation/pages/enroll_course_page.dart';
 import 'src/features/home/presentation/pages/new_course_page.dart';
-import 'src/features/activities/data/datasources/local/local_activity_source.dart ';
-import 'src/features/activities/domain/repositories/i_activity_repository.dart';
-import 'src/features/activities/data/repositories_impl/activity_repository.dart';
-import 'src/features/activities/domain/usecases/activity_usecase.dart';
-import 'src/features/activities/presentation/controllers/activity_controller.dart';
-import 'src/features/activities/data/datasources/local/i_remote_activity_source.dart';
-import 'src/features/categories/presentation/controllers/category_controller.dart';
-import 'src/features/categories/data/repositories/category_repository_mock.dart';
-import 'src/features/categories/domain/usecases/category_usecases.dart';
+import 'src/features/home/presentation/pages/enroll_course_page.dart';
+import 'package:cowork_app/src/features/activities/presentation/pages/activities_page.dart';
+import 'package:cowork_app/src/features/activities/presentation/pages/activityFormPage.dart';
 import 'src/features/categories/presentation/pages/category_list_page.dart';
 
-void main() {
-  Get.put(EnrollCourseController());
+//dependency injection
+import 'core/di/dependency_injection.dart'; 
+import 'core/data/database/hive_helper.dart';
 
-  //Activities
+void main() async {
 
-  Get.put<IActivitySource>(LocalActivitySource());
-  Get.put<IActivityRepository>(ActivityRepository(Get.find()));
-  Get.put(ActivityUseCase(Get.find()));
-  Get.put(ActivityController());
+  WidgetsFlutterBinding.ensureInitialized();
+  await HiveHelper.initHive();
+  await DependencyInjection.init();
+  Loggy.initLoggy(logPrinter: const PrettyPrinter(showColors: true));
 
-  //Categories
-  final repo = CategoryRepositoryMock();
-
-  final useCases = CategoryUseCases(
-    createCategory: CreateCategory(repo),
-    getCategories: GetCategories(repo),
-    updateCategory: UpdateCategory(repo),
-    deleteCategory: DeleteCategory(repo),
-  );
-
-  Get.put(CategoryController(useCases));
 
   runApp(const MyApp());
 }

@@ -1,11 +1,24 @@
-enum MetodoAgrupacion { random, selfAssigned, manual }
+import 'package:hive/hive.dart';
+import 'metodo_agrupacion.dart';
 
-class Category {
-  final int? id;
-  final int cursoId;
-  final String nombre;
-  final MetodoAgrupacion metodoAgrupacion;
-  final int maxMiembros;
+part 'category.g.dart';
+
+@HiveType(typeId: 5)
+class Category extends HiveObject {
+  @HiveField(0)
+  int? id;
+
+  @HiveField(1)
+  int cursoId;
+
+  @HiveField(2)
+  String nombre;
+
+  @HiveField(3)
+  MetodoAgrupacion metodoAgrupacion;
+
+  @HiveField(4)
+  int maxMiembros;
 
   Category({
     this.id,
@@ -14,7 +27,6 @@ class Category {
     required this.metodoAgrupacion,
     required this.maxMiembros,
   });
-
 
   Category copyWith({
     int? id,

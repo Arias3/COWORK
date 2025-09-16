@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/login_controller.dart';
+import 'package:cowork_app/src/features/auth/domain/use_case/usuario_usecase.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final AuthController authController = Get.put(AuthController());
+    final AuthenticationController authController = Get.put(AuthenticationController(Get.find<UsuarioUseCase>()));
     final usuarioController = TextEditingController();
     final contrasenaController = TextEditingController();
     return Scaffold(
@@ -136,15 +137,14 @@ class LoginPage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Checkbox(
-                          value: false,
-                          onChanged: (value) {},
-                          activeColor: const Color(0xFF3B3576),
-                        ),
-                        const Text(
-                          'Recuérdame',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        Obx(() => Checkbox(
+  value: authController.rememberMe.value,
+  onChanged: (value) {
+    authController.rememberMe.value = value ?? false;
+  },
+  activeColor: const Color(0xFF3B3576),
+)),
+
                       ],
                     ),
                     const SizedBox(height: 5),
@@ -170,12 +170,20 @@ class LoginPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          authController.usuario.value = usuarioController.text;
-                          authController.contrasena.value =
-                              contrasenaController.text;
-                          authController.login();
-                        },
+                        onPressed: () async {
+  final email = usuarioController.text.trim();
+  final password = contrasenaController.text.trim();
+
+  final success = await authController.login(email, password);
+
+  if (success) {
+    Get.snackbar("Éxito", "Bienvenido ${authController.currentUser.value?.nombre}");
+    Get.offAllNamed('/home'); // ejemplo de navegación al home
+  } else {
+    Get.snackbar("Error", authController.errorMessage.value);
+  }
+},
+
                         child: const Text(
                           'Iniciar sesión',
                           style: TextStyle(

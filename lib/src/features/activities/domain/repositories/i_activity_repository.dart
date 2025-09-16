@@ -2,12 +2,8 @@ import '../../../activities/domain/models/activity.dart';
 
 abstract class IActivityRepository {
   Future<List<Activity>> getActivities();
-
-  Future<bool> addActivity(Activity p);
-
-  Future<bool> updateActivity(Activity p);
-
-  Future<bool> deleteActivity(Activity p);
-
-  Future<bool> deleteActivities();
+  Future<void> addActivity(Activity activity);
+  Future<void> updateActivity(Activity activity);
+  Future<void> deleteActivity(Activity activity);
+  Future<void> deleteActivities();
 }

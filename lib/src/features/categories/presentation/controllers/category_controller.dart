@@ -7,7 +7,6 @@ class CategoryController extends GetxController {
 
   CategoryController(this.useCases);
 
-  // Lista reactiva de categorías expuesta a la vista
   final categories = <Category>[].obs;
 
   @override
@@ -21,18 +20,33 @@ class CategoryController extends GetxController {
     categories.assignAll(result);
   }
 
-  Future<void> addCategory(Category category) async {
-    await useCases.createCategory(category);
-    await loadCategories();
+  Future<void> loadCategoriesByCurso(int cursoId) async {
+    final result = await useCases.getCategoriesByCurso(cursoId);
+    categories.assignAll(result);
   }
 
-  Future<void> editCategory(Category category) async {
-    await useCases.updateCategory(category);
-    await loadCategories();
+  // 🔹 ahora retorna int en vez de void
+  Future<int> addCategory(Category category) async {
+    final id = await useCases.createCategory(category);
+    if (id > 0) {
+      await loadCategoriesByCurso(category.cursoId);
+    }
+    return id;
   }
 
-  Future<void> removeCategory(int id) async {
-    await useCases.deleteCategory(id);
-    await loadCategories();
+  Future<bool> removeCategory(int id) async {
+    final result = await useCases.deleteCategory(id);
+    if (result) {
+      await loadCategories();
+    }
+    return result;
+  }
+
+  Future<bool> editCategory(Category category) async {
+    final result = await useCases.updateCategory(category);
+    if (result) {
+      await loadCategoriesByCurso(category.cursoId);
+    }
+    return result;
   }
 }

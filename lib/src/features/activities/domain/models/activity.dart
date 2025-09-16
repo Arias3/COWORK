@@ -1,8 +1,22 @@
-class Activity {
+import 'package:hive/hive.dart';
+
+part 'activity.g.dart';
+
+@HiveType(typeId: 6)
+class Activity extends HiveObject {
+  @HiveField(0)
   String? id;
+
+  @HiveField(1)
   int categoryId;
+
+  @HiveField(2)
   String name;
+
+  @HiveField(3)
   String description;
+
+  @HiveField(4)
   DateTime deliveryDate;
 
   Activity({
@@ -13,7 +27,6 @@ class Activity {
     required this.deliveryDate,
   });
 
-  // 🔹 copyWith
   Activity copyWith({
     String? id,
     int? categoryId,
@@ -28,35 +41,5 @@ class Activity {
       description: description ?? this.description,
       deliveryDate: deliveryDate ?? this.deliveryDate,
     );
-  }
-
-  factory Activity.fromJson(Map<String, dynamic> json) => Activity(
-        id: json["_id"],
-        categoryId: json["categoryId"] ?? 0,
-        name: json["name"] ?? "---",
-        description: json["description"] ?? "---",
-        deliveryDate: json["delivery_date"] != null
-            ? DateTime.parse(json["delivery_date"])
-            : DateTime.now(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        "_id": id ?? "0",
-        "categoryId": categoryId,
-        "name": name,
-        "description": description,
-        "delivery_date": deliveryDate.toIso8601String(),
-      };
-
-  Map<String, dynamic> toJsonNoId() => {
-        "categoryId": categoryId,
-        "name": name,
-        "description": description,
-        "delivery_date": deliveryDate.toIso8601String(),
-      };
-
-  @override
-  String toString() {
-    return 'Activity{id: $id, categoryId: $categoryId, name: $name, description: $description, deliveryDate: $deliveryDate}';
   }
 }
