@@ -39,6 +39,7 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
       _nameController.text = widget.category!.nombre;
       _maxMembersController.text = widget.category!.maxMiembros.toString();
       _selectedMethod = widget.category!.metodoAgrupacion;
+      activityController.getActivities(categoryId: widget.category!.id);
     }
 
     // Intentar obtener curso (constructor primero, luego Get.arguments)

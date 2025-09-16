@@ -9,9 +9,15 @@ class HiveCategoryRepository implements CategoryRepository {
 
   @override
   Future<int> createCategory(Category category) async {
-    final newId = category.id ?? DateTime.now().millisecondsSinceEpoch;
+    // 🔹 Generamos un nuevo ID autoincremental
+    final newId = (_box.keys.isEmpty
+            ? 0
+            : _box.keys.cast<int>().reduce((a, b) => a > b ? a : b)) +
+        1;
+
     final newCategory = category.copyWith(id: newId);
     await _box.put(newId, newCategory);
+
     return newId;
   }
 
@@ -29,6 +35,7 @@ class HiveCategoryRepository implements CategoryRepository {
   Future<bool> updateCategory(Category category) async {
     if (category.id == null) return false;
     if (!_box.containsKey(category.id)) return false;
+
     await _box.put(category.id, category);
     return true;
   }
@@ -36,6 +43,7 @@ class HiveCategoryRepository implements CategoryRepository {
   @override
   Future<bool> deleteCategory(int id) async {
     if (!_box.containsKey(id)) return false;
+
     await _box.delete(id);
     return true;
   }

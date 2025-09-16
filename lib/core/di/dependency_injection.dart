@@ -38,7 +38,7 @@ class DependencyInjection {
     // ==========================
     // 🔹 Activities con Hive
     // ==========================
-    Hive.registerAdapter(ActivityAdapter());
+
     final activityBox = await Hive.openBox<Activity>('activities');
     final activityRepo = ActivityHiveRepository(activityBox);
     Get.put<IActivityRepository>(activityRepo);
@@ -48,7 +48,7 @@ class DependencyInjection {
     // ==========================
     // 🔹 Categories con Hive
     // ==========================
-    Hive.registerAdapter(CategoryAdapter());
+ 
     final categoryBox = await Hive.openBox<Category>('categories');
     final categoryRepo = HiveCategoryRepository(categoryBox);
     final categoryUseCases = CategoryUseCases(

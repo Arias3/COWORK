@@ -18,7 +18,7 @@ class HiveHelper {
   static Future<void> initHive() async {
     await Hive.initFlutter();
 
-    // 🔹 Registrar adapters
+    // ✅ Registrar adapters solo aquí
     Hive.registerAdapter(UsuarioAdapter());
     Hive.registerAdapter(CursoDomainAdapter());
     Hive.registerAdapter(InscripcionAdapter());
@@ -26,14 +26,14 @@ class HiveHelper {
     Hive.registerAdapter(CategoryAdapter());
     Hive.registerAdapter(ActivityAdapter());
 
-    // 🔹 Abrir boxes
+    // ✅ Abrir boxes solo aquí
     await Hive.openBox<Usuario>(usuariosBox);
     await Hive.openBox<CursoDomain>(cursosBox);
     await Hive.openBox<Inscripcion>(inscripcionesBox);
     await Hive.openBox<Category>(categoriasBox);
     await Hive.openBox<Activity>(actividadesBox);
 
-    // 🔹 Datos iniciales
+    // ✅ Cargar datos iniciales
     await _loadInitialData();
   }
 
@@ -44,7 +44,7 @@ class HiveHelper {
     final categoriasBoxInstance = Hive.box<Category>(categoriasBox);
     final actividadesBoxInstance = Hive.box<Activity>(actividadesBox);
 
-    // Usuarios
+    // Usuarios iniciales
     if (usuariosBoxInstance.isEmpty) {
       final usuarios = [
         Usuario(
@@ -72,10 +72,9 @@ class HiveHelper {
       for (var usuario in usuarios) {
         await usuariosBoxInstance.put(usuario.id, usuario);
       }
-      await usuariosBoxInstance.flush();
     }
 
-    // Cursos
+    // Cursos iniciales
     if (cursosBoxInstance.isEmpty) {
       final cursos = [
         CursoDomain(
@@ -112,10 +111,9 @@ class HiveHelper {
       for (var curso in cursos) {
         await cursosBoxInstance.put(curso.id, curso);
       }
-      await cursosBoxInstance.flush();
     }
 
-    // Inscripciones
+    // Inscripciones iniciales
     if (inscripcionesBoxInstance.isEmpty) {
       final inscripciones = [
         Inscripcion(id: 1, usuarioId: 2, cursoId: 3),
@@ -124,10 +122,9 @@ class HiveHelper {
       for (var inscripcion in inscripciones) {
         await inscripcionesBoxInstance.put(inscripcion.id, inscripcion);
       }
-      await inscripcionesBoxInstance.flush();
     }
 
-    // Categorías
+    // Categorías iniciales
     if (categoriasBoxInstance.isEmpty) {
       final categorias = [
         Category(
@@ -148,10 +145,9 @@ class HiveHelper {
       for (var cat in categorias) {
         await categoriasBoxInstance.put(cat.id, cat);
       }
-      await categoriasBoxInstance.flush();
     }
 
-    // Actividades
+    // Actividades iniciales
     if (actividadesBoxInstance.isEmpty) {
       final actividades = [
         Activity(
@@ -172,11 +168,10 @@ class HiveHelper {
       for (var act in actividades) {
         await actividadesBoxInstance.put(act.id, act);
       }
-      await actividadesBoxInstance.flush();
     }
   }
 
-  // Getters
+  // ✅ Getters
   static Box<Usuario> get usuariosBoxInstance => Hive.box<Usuario>(usuariosBox);
   static Box<CursoDomain> get cursosBoxInstance => Hive.box<CursoDomain>(cursosBox);
   static Box<Inscripcion> get inscripcionesBoxInstance => Hive.box<Inscripcion>(inscripcionesBox);
