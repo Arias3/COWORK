@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:collection/collection.dart';
 import '../controllers/new_course_controller.dart';
+
 
 class NewCoursePage extends StatelessWidget {
   const NewCoursePage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<NewCourseController>(
-      builder: (controller) => Scaffold(
+@override
+Widget build(BuildContext context) {
+  return GetBuilder<NewCourseController>(
+    init: Get.find<NewCourseController>(), // Forzar inicialización
+    builder: (controller) {
+      print('UI: Controlador obtenido: ${controller.runtimeType}');
+      return Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: _buildAppBar(),
         body: _buildBody(controller),
         floatingActionButton: _buildFloatingActionButton(controller),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -154,6 +160,8 @@ class NewCoursePage extends StatelessWidget {
           _buildNameSection(controller),
           const SizedBox(height: 24),
           _buildDescriptionSection(controller),
+          const SizedBox(height: 24),
+          _buildRegistrationCodeSection(controller),
           const SizedBox(height: 24),
           _buildCategoriesSection(controller),
           const SizedBox(height: 24),
@@ -367,213 +375,530 @@ class NewCoursePage extends StatelessWidget {
     );
   }
 
-  Widget _buildStudentsSection(NewCourseController controller) {
+Widget _buildStudentsSection(NewCourseController controller) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(
+            Icons.people,
+            color: Colors.orange,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Estudiantes Registrados',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const Spacer(),
+          // Botón de diagnóstico (temporal para debug)
+          TextButton.icon(
+            onPressed: controller.mostrarEstadisticas,
+            icon: const Icon(Icons.info_outline, size: 16),
+            label: const Text('Info', style: TextStyle(fontSize: 12)),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      
+      // Buscador mejorado
+      _buildStudentSearch(controller),
+      const SizedBox(height: 16),
+      
+      // Lista de estudiantes seleccionados
+      _buildSelectedStudentsList(controller),
+      const SizedBox(height: 16),
+      
+      // Lista de estudiantes disponibles
+      _buildAvailableStudentsList(controller),
+    ],
+  );
+}
+
+Widget _buildStudentSearch(NewCourseController controller) {
+  print('UI: _buildStudentSearch llamado');
+  print('UI: Controller hashCode: ${controller.hashCode}');
+  final searchController = TextEditingController();
+  
+  return Column(
+    children: [
+      Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar estudiante por nombre o email...',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  prefixIcon: Icon(Icons.search, color: Colors.grey),
+                ),
+                onChanged: (value) => controller.searchQuery.value = value,
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.all(4),
+              child: Obx(() => ElevatedButton(
+                onPressed: controller.isLoadingStudents.value
+                    ? null
+                    : () async {
+                        await controller.cargarEstudiantes();
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  elevation: 0,
+                ),
+                child: controller.isLoadingStudents.value
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.refresh, size: 20),
+              )),
+            ),
+          ],
+        ),
+      ),
+      
+      // Sugerencias de búsqueda
+      Obx(() {
+        if (controller.searchQuery.value.isEmpty || 
+            controller.searchQuery.value.length < 2) {
+          return const SizedBox();
+        }
+        
+        final sugerencias = controller.estudiantesDisponibles.take(3).toList();
+        
+        if (sugerencias.isEmpty) {
+          return const SizedBox();
+        }
+        
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'Sugerencias:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              ...sugerencias.map((estudiante) => InkWell(
+                onTap: () {
+                  controller.agregarEstudiante(estudiante);
+                  searchController.clear();
+                  controller.searchQuery.value = '';
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.blue.withOpacity(0.1),
+                        child: Text(
+                          estudiante.nombre[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              estudiante.nombre,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              estudiante.email,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.add_circle_outline,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                    ],
+                  ),
+                ),
+              )).toList(),
+            ],
+          ),
+        );
+      }),
+    ],
+  );
+}
+
+Widget _buildSelectedStudentsList(NewCourseController controller) {
+  return Obx(() {
+    if (controller.estudiantesSeleccionados.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!, style: BorderStyle.solid),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No hay estudiantes seleccionados',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Busca y selecciona estudiantes registrados',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(
-              Icons.people,
-              color: Colors.orange,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${controller.estudiantesSeleccionados.length} estudiantes seleccionados',
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'Estudiantes',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            const Spacer(),
+            TextButton.icon(
+              onPressed: controller.limpiarSeleccion,
+              icon: const Icon(Icons.clear_all, size: 16),
+              label: const Text('Limpiar'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+                textStyle: const TextStyle(fontSize: 12),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        _buildAddStudentInput(controller),
-        const SizedBox(height: 16),
-        _buildStudentsList(controller),
-      ],
-    );
-  }
-
-  Widget _buildAddStudentInput(NewCourseController controller) {
-    final estudianteController = TextEditingController();
-    
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: estudianteController,
-              decoration: const InputDecoration(
-                hintText: 'Nombre del estudiante',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  controller.agregarEstudiante(value.trim());
-                  estudianteController.clear();
-                }
-              },
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.all(4),
-            child: ElevatedButton(
-              onPressed: () {
-                if (estudianteController.text.trim().isNotEmpty) {
-                  controller.agregarEstudiante(estudianteController.text.trim());
-                  estudianteController.clear();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                elevation: 0,
-              ),
-              child: const Icon(Icons.add, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudentsList(NewCourseController controller) {
-    return Obx(() {
-      if (controller.estudiantes.isEmpty) {
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(32),
+        const SizedBox(height: 8),
+        Container(
+          constraints: const BoxConstraints(maxHeight: 200),
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!, style: BorderStyle.solid),
+            border: Border.all(color: Colors.grey[200]!),
           ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: controller.estudiantesSeleccionados.length,
+            itemBuilder: (context, index) {
+              final estudiante = controller.estudiantesSeleccionados[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[100]!),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.green.withOpacity(0.1),
+                    child: Text(
+                      estudiante.nombre[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    estudiante.nombre,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    estudiante.email,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(
+                      Icons.remove_circle_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    onPressed: () => controller.eliminarEstudiante(estudiante),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  });
+}
+
+Widget _buildAvailableStudentsList(NewCourseController controller) {
+  return Obx(() {
+    if (controller.isLoadingStudents.value) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: const Center(
           child: Column(
             children: [
-              Icon(
-                Icons.people_outline,
-                size: 48,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'No hay estudiantes agregados',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Agrega estudiantes para tu curso',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[500],
-                ),
-              ),
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Cargando estudiantes...'),
             ],
           ),
-        );
-      }
+        ),
+      );
+    }
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    if (controller.estudiantesDisponibles.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange[200]!),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 32,
+              color: Colors.orange[600],
             ),
-            child: Text(
-              '${controller.estudiantes.length} estudiantes agregados',
-              style: const TextStyle(
-                color: Colors.orange,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Text(
+              controller.searchQuery.value.isEmpty
+                  ? 'No hay más estudiantes disponibles'
+                  : 'No se encontraron estudiantes',
+              style: TextStyle(
+                color: Colors.orange[700],
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 200),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
+            Text(
+              controller.searchQuery.value.isEmpty
+                  ? 'Todos los estudiantes están seleccionados'
+                  : 'Intenta con otros términos de búsqueda',
+              style: TextStyle(
+                color: Colors.orange[600],
+                fontSize: 12,
+              ),
             ),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: controller.estudiantes.length,
-              itemBuilder: (context, index) {
-                final estudiante = controller.estudiantes[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[100]!),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '${controller.estudiantesDisponibles.length} estudiantes disponibles',
+            style: const TextStyle(
+              color: Colors.blue,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          constraints: const BoxConstraints(maxHeight: 250),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: controller.estudiantesDisponibles.length,
+            itemBuilder: (context, index) {
+              final estudiante = controller.estudiantesDisponibles[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[100]!),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    child: Text(
+                      estudiante.nombre[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
-                  child: ListTile(
-                    dense: true,
-                    leading: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.orange.withOpacity(0.1),
-                      child: Text(
-                        estudiante[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                  title: Text(
+                    estudiante.nombre,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        estudiante.email,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
                         ),
                       ),
+                      Text(
+                        'Registrado: ${_formatDate(estudiante.creadoEn)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(
+                      Icons.add_circle_outline,
+                      color: Colors.green,
+                      size: 20,
                     ),
-                    title: Text(
-                      estudiante,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                      onPressed: () => controller.eliminarEstudiante(index),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
+                    onPressed: () => controller.agregarEstudiante(estudiante),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
-      );
-    });
-  }
+        ),
+      ],
+    );
+  });
+}
 
-  Widget _buildFloatingActionButton(NewCourseController controller) {
+// Función auxiliar para formatear fechas
+String _formatDate(DateTime date) {
+  return '${date.day}/${date.month}/${date.year}';
+}
+
+  Widget? _buildFloatingActionButton(NewCourseController controller) {
     return Obx(() => FloatingActionButton.extended(
       onPressed: controller.isLoading.value
           ? null
@@ -703,4 +1028,124 @@ class NewCoursePage extends StatelessWidget {
       barrierDismissible: false,
     );
   }
+  // Add this method to your NewCoursePage class
+Widget _buildRegistrationCodeSection(NewCourseController controller) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(
+            Icons.vpn_key,
+            color: Colors.purple,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Código de Registro',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const Text(
+            ' *',
+            style: TextStyle(color: Colors.red, fontSize: 16),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Los estudiantes usarán este código para inscribirse al curso:',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Obx(() => TextField(
+                    controller: TextEditingController(text: controller.codigoRegistro.value)
+                      ..selection = TextSelection.collapsed(offset: controller.codigoRegistro.value.length),
+                    onChanged: (value) => controller.codigoRegistro.value = value.toUpperCase(),
+                    decoration: InputDecoration(
+                      hintText: 'Ej: PROG001, FLU2024',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.purple, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                      prefixIcon: const Icon(Icons.tag, color: Colors.grey),
+                    ),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  )),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: controller.generarCodigoAleatorio,
+                  icon: const Icon(Icons.shuffle, size: 16),
+                  label: const Text('Generar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Mínimo 4 caracteres. Se recomienda usar letras y números.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
 }

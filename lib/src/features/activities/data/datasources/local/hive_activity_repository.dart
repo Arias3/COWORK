@@ -19,12 +19,23 @@ class ActivityHiveRepository implements IActivityRepository {
 
   @override
   Future<void> updateActivity(Activity activity) async {
-    await activity.save(); // HiveObject lo permite directamente
+    // ✅ Opción 1: Guardar objeto inmutable usando su clave
+    if (activity.key != null) {
+      await box.put(activity.key, activity);
+    } else {
+      throw HiveError(
+          "❌ No se puede actualizar: el objeto no tiene una clave en Hive");
+    }
   }
 
   @override
   Future<void> deleteActivity(Activity activity) async {
-    await activity.delete();
+    if (activity.key != null) {
+      await box.delete(activity.key);
+    } else {
+      throw HiveError(
+          "❌ No se puede eliminar: el objeto no tiene una clave en Hive");
+    }
   }
 
   @override

@@ -11,33 +11,40 @@ class UsuarioUseCase {
   Future<Usuario?> getUsuarioByEmail(String email) => _repository.getUsuarioByEmail(email);
   
   Future<int> createUsuario({
-    required String nombre,
-    required String email,
-    required String password,
-    required String rol,
-  }) async {
-    // Validaciones
-    if (nombre.trim().isEmpty) throw Exception('El nombre es obligatorio');
-    if (email.trim().isEmpty) throw Exception('El email es obligatorio');
-    if (password.trim().isEmpty) throw Exception('La contraseña es obligatoria');
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      throw Exception('Email no válido');
-    }
-    
-    // Verificar si el email ya existe
-    if (await _repository.existeEmail(email)) {
-      throw Exception('Este email ya está registrado');
-    }
-
-    final usuario = Usuario(
-      nombre: nombre.trim(),
-      email: email.trim().toLowerCase(),
-      password: password, // En producción usar hash
-      rol: rol,
-    );
-
-    return await _repository.createUsuario(usuario);
+  required String nombre,
+  required String email,
+  required String password,
+  required String rol,
+}) async {
+  // Validaciones existentes
+  if (nombre.trim().isEmpty) throw Exception('El nombre es obligatorio');
+  if (email.trim().isEmpty) throw Exception('El email es obligatorio');
+  if (password.trim().isEmpty) throw Exception('La contraseña es obligatoria');
+  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+    throw Exception('Email no válido');
   }
+  
+  // Verificar si el email ya existe
+  if (await _repository.existeEmail(email)) {
+    throw Exception('Este email ya está registrado');
+  }
+
+  // Generar nuevo ID único
+  final usuarios = await _repository.getUsuarios();
+  final nuevoId = usuarios.isEmpty 
+    ? 1 
+    : usuarios.map((u) => u.id!).reduce((a, b) => a > b ? a : b) + 1;
+
+  final usuario = Usuario(
+    id: nuevoId, // ← Agregar esta línea
+    nombre: nombre.trim(),
+    email: email.trim().toLowerCase(),
+    password: password,
+    rol: rol,
+  );
+
+  return await _repository.createUsuario(usuario);
+}
 
   Future<void> updateUsuario(Usuario usuario) => _repository.updateUsuario(usuario);
   Future<void> deleteUsuario(int id) => _repository.deleteUsuario(id);

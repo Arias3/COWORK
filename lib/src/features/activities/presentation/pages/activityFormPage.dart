@@ -5,8 +5,8 @@ import '../../../activities/domain/models/activity.dart';
 import '../controllers/activity_controller.dart';
 
 class ActivityFormPage extends StatefulWidget {
-  final int categoryId; // 🔹 Necesario para vincular la actividad a la categoría
-  final Activity? activity; // 🔹 Si es null → creación, si no → edición
+  final int categoryId;
+  final Activity? activity;
 
   const ActivityFormPage({
     super.key,
@@ -30,8 +30,7 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.activity?.name ?? '');
-    descController =
-        TextEditingController(text: widget.activity?.description ?? '');
+    descController = TextEditingController(text: widget.activity?.description ?? '');
     deliveryDate = widget.activity?.deliveryDate ?? DateTime.now();
   }
 
@@ -49,35 +48,37 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-
     if (picked != null) {
       setState(() => deliveryDate = picked);
     }
   }
 
-  void _save() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
       if (widget.activity == null) {
-        // Crear nueva actividad vinculada a la categoría actual
-        activityController.addActivity(
+        await activityController.addActivity(
           widget.categoryId,
-          nameController.text,
-          descController.text,
+          nameController.text.trim(),
+          descController.text.trim(),
           deliveryDate ?? DateTime.now(),
         );
+        Get.snackbar("Éxito", "Actividad creada correctamente");
       } else {
-        // Actualizar actividad existente
         final updated = widget.activity!.copyWith(
           categoryId: widget.activity!.categoryId,
-          name: nameController.text,
-          description: descController.text,
+          name: nameController.text.trim(),
+          description: descController.text.trim(),
           deliveryDate: deliveryDate ?? widget.activity!.deliveryDate,
         );
-        activityController.updateActivity(updated);
+        await activityController.updateActivity(updated);
+        Get.snackbar("Éxito", "Actividad actualizada correctamente");
       }
 
-      // 🔹 Al volver, CategoryFormPage (con Obx) se refresca automáticamente
-      Get.back();
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      Get.snackbar("Error", "Ocurrió un error: $e");
     }
   }
 
@@ -87,43 +88,69 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Editar Actividad' : 'Nueva Actividad'),
+        title: Text(isEditing ? '✏️ Editar Actividad' : '📝 Nueva Actividad'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Requerido' : null,
+                decoration: InputDecoration(
+                  labelText: 'Nombre',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.title),
+                ),
+                validator: (value) => value == null || value.isEmpty ? 'Ingrese un nombre' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: descController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Fecha de entrega: ${deliveryDate != null ? deliveryDate!.toLocal().toString().split(' ')[0] : 'No seleccionada'}',
-                    ),
+                decoration: InputDecoration(
+                  labelText: 'Descripción',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
+                  prefixIcon: const Icon(Icons.description),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: const Icon(Icons.calendar_today, color: Colors.blue),
+                  title: Text(
+                    deliveryDate != null
+                        ? "Fecha de entrega: ${deliveryDate!.toLocal().toString().split(' ')[0]}"
+                        : "Seleccione una fecha",
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit_calendar),
                     onPressed: _pickDate,
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _save,
-                child: Text(isEditing ? 'Actualizar' : 'Guardar'),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _save,
+                  icon: Icon(isEditing ? Icons.save : Icons.add),
+                  label: Text(
+                    isEditing ? "Guardar cambios" : "Crear actividad",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.blueAccent,
+                  ),
+                ),
               ),
             ],
           ),

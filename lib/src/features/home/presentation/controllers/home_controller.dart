@@ -3,13 +3,15 @@ import 'package:get/get.dart';
 import '../../domain/use_case/curso_usecase.dart';
 import '../../domain/entities/curso_entity.dart';
 import '../../../auth/presentation/controllers/login_controller.dart';
-
+import '../../../auth/domain/use_case/usuario_usecase.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   final CursoUseCase cursoUseCase;
   final AuthenticationController authController;
+  final UsuarioUseCase usuarioUseCase;
 
-  HomeController(this.cursoUseCase, this.authController);
+  HomeController(this.cursoUseCase, this.authController,this.usuarioUseCase,);
 
   // Estados de UI
   var dictados = <CursoDomain>[].obs;
@@ -28,13 +30,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     'Ciencias', 'Arte', 'Negocios', 'Tecnología'
   ].obs;
 
-  // Controladores de formularios
-  final TextEditingController nombreController = TextEditingController();
-  final TextEditingController descripcionController = TextEditingController();
-  final TextEditingController estudianteController = TextEditingController();
-  var selectedCategoriasCrear = <String>[].obs;
-  var estudiantesCrear = <String>[].obs;
-
+  
   @override
   void onInit() {
     super.onInit();
@@ -59,306 +55,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   // =============== FUNCIONES PARA CURSOS DICTADOS ===============
 
-  Future<void> crearCurso() async {
-    // Limpiar formulario
-    nombreController.clear();
-    descripcionController.clear();
-    estudianteController.clear();
-    selectedCategoriasCrear.clear();
-    estudiantesCrear.clear();
 
-    Get.dialog(
-      AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.add_circle, color: Colors.blue, size: 28),
-            const SizedBox(width: 8),
-            const Text('Crear Nuevo Curso'),
-          ],
-        ),
-        content: _buildCrearCursoForm(),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: _confirmarCrearCurso,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Crear'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCrearCursoForm() {
-    return SizedBox(
-      width: double.maxFinite,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre del curso',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.book),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descripcionController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Descripción',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Categorías:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 120,
-              child: SingleChildScrollView(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: categorias.map((categoria) {
-                    return Obx(() => FilterChip(
-                      label: Text(categoria),
-                      selected: selectedCategoriasCrear.contains(categoria),
-                      onSelected: (selected) {
-                        if (selected) {
-                          selectedCategoriasCrear.add(categoria);
-                        } else {
-                          selectedCategoriasCrear.remove(categoria);
-                        }
-                      },
-                      selectedColor: Colors.blue.withOpacity(0.2),
-                      checkmarkColor: Colors.blue,
-                    ));
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Estudiantes:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: estudianteController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre del estudiante',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    onSubmitted: (value) => _agregarEstudianteCrear(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _agregarEstudianteCrear,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                  child: const Icon(Icons.add),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Obx(() => Container(
-              height: estudiantesCrear.isEmpty ? 50 : 120,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: estudiantesCrear.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No hay estudiantes agregados',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: estudiantesCrear.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListTile(
-                            dense: true,
-                            leading: const CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.blue,
-                              child: Icon(
-                                Icons.person,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                            title: Text(
-                              estudiantesCrear[index],
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                              onPressed: () => _eliminarEstudianteCrear(index),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            )),
-            const SizedBox(height: 8),
-            Obx(() => Text(
-              'Total: ${estudiantesCrear.length} estudiantes',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _agregarEstudianteCrear() {
-    final nombre = estudianteController.text.trim();
-    if (nombre.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Por favor ingresa un nombre',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        icon: const Icon(Icons.error, color: Colors.white),
-        duration: const Duration(seconds: 2),
-      );
-      return;
-    }
-
-    if (estudiantesCrear.contains(nombre)) {
-      Get.snackbar(
-        'Error',
-        'Este estudiante ya está agregado',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        icon: const Icon(Icons.warning, color: Colors.white),
-        duration: const Duration(seconds: 2),
-      );
-      return;
-    }
-
-    estudiantesCrear.add(nombre);
-    estudianteController.clear();
-    
-    Get.snackbar(
-      'Agregado',
-      'Estudiante "$nombre" agregado',
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      icon: const Icon(Icons.check, color: Colors.white),
-      duration: const Duration(seconds: 1),
-    );
-  }
-
-  void _eliminarEstudianteCrear(int index) {
-    final nombre = estudiantesCrear[index];
-    estudiantesCrear.removeAt(index);
-    
-    Get.snackbar(
-      'Eliminado',
-      'Estudiante "$nombre" eliminado',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      icon: const Icon(Icons.delete, color: Colors.white),
-      duration: const Duration(seconds: 1),
-    );
-  }
-
-  Future<void> _confirmarCrearCurso() async {
-    if (nombreController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'El nombre del curso es obligatorio',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        icon: const Icon(Icons.error, color: Colors.white),
-      );
-      return;
-    }
-
-    try {
-      final userId = authController.currentUser.value?.id;
-      if (userId == null) {
-        Get.snackbar(
-          'Error',
-          'Usuario no autenticado',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
-      }
-
-      await cursoUseCase.createCurso(
-        nombre: nombreController.text.trim(),
-        descripcion: descripcionController.text.trim(),
-        profesorId: userId,
-        categorias: selectedCategoriasCrear.toList(),
-        estudiantesNombres: estudiantesCrear.toList(),
-      );
-      
-      Get.back();
-      await refreshData(); // Recargar datos
-      
-      Get.snackbar(
-        'Éxito',
-        'Curso "${nombreController.text}" creado con ${estudiantesCrear.length} estudiantes',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        icon: const Icon(Icons.check_circle, color: Colors.white),
-        duration: const Duration(seconds: 3),
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al crear curso: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
-  }
 
   Future<void> eliminarCurso(CursoDomain curso) async {
     Get.dialog(
@@ -530,9 +227,196 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   void onClose() {
     slideController.dispose();
     fadeController.dispose();
-    nombreController.dispose();
-    descripcionController.dispose();
-    estudianteController.dispose();
     super.onClose();
   }
+
+  void abrirGestionEquipos(CursoDomain curso) {
+  Get.toNamed('/categoria-equipos', arguments: curso);
+}
+
+Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
+    try {
+      print('🔍 Obteniendo estudiantes reales del curso $cursoId');
+      
+      // 1. Obtener todas las inscripciones del curso
+      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(cursoId);
+      print('📋 Inscripciones encontradas: ${inscripciones.length}');
+      
+      if (inscripciones.isEmpty) {
+        print('❌ No hay inscripciones para el curso $cursoId');
+        return [];
+      }
+      
+      // 2. Obtener todos los usuarios del sistema
+      final todosUsuarios = await usuarioUseCase.getUsuarios();
+      
+      // 3. Filtrar solo los usuarios que están inscritos en este curso
+      final estudiantesInscritos = <Usuario>[];
+      for (var inscripcion in inscripciones) {
+        final usuario = todosUsuarios.firstWhereOrNull(
+        (u) => u.id == inscripcion.usuarioId,
+        );
+        if (usuario != null) {
+          estudiantesInscritos.add(usuario);
+          print('✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})');
+        }
+      }
+      
+      print('🎓 Total estudiantes reales: ${estudiantesInscritos.length}');
+      return estudiantesInscritos;
+      
+    } catch (e) {
+      print('❌ Error obteniendo estudiantes reales: $e');
+      return [];
+    }
+  }
+
+  Future<int> getNumeroEstudiantesReales(int cursoId) async {
+    final estudiantes = await getEstudiantesReales(cursoId);
+    return estudiantes.length;
+  }
+
+
+  // ✅ MÉTODO PARA MOSTRAR ESTUDIANTES REALES (reemplaza el existente)
+  void mostrarEstudiantesReales(CursoDomain curso) async {
+    try {
+      // Mostrar loading
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final estudiantesReales = await getEstudiantesReales(curso.id!);
+      
+      // Cerrar loading
+      Get.back();
+      
+      // Mostrar diálogo con estudiantes reales
+      Get.dialog(
+        AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Estudiantes de ${curso.nombre}'),
+              Text(
+                '${estudiantesReales.length} estudiante(s) inscrito(s)',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: estudiantesReales.isEmpty
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay estudiantes inscritos',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comparte el código "${curso.codigoRegistro}" para que los estudiantes se inscriban',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: estudiantesReales.length,
+                    itemBuilder: (context, index) {
+                      final estudiante = estudiantesReales[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          child: Text(
+                            estudiante.nombre[0].toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Text(estudiante.nombre),
+                        subtitle: Text(
+                          estudiante.email,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'INSCRITO',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            if (estudiantesReales.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  Get.back();
+                  Get.snackbar(
+                    'Código de Registro',
+                    'Código: ${curso.codigoRegistro}',
+                    backgroundColor: Colors.purple,
+                    colorText: Colors.white,
+                    duration: const Duration(seconds: 5),
+                  );
+                },
+                child: const Text('Compartir Código'),
+              ),
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+      
+    } catch (e) {
+      Get.back(); // Cerrar loading si hay error
+      Get.snackbar(
+        'Error',
+        'No se pudieron cargar los estudiantes: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+  
 }

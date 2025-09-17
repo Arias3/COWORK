@@ -31,14 +31,17 @@ class UsuarioRepositoryImpl implements UsuarioRepository {
   }
 
   @override
-  Future<int> createUsuario(Usuario usuario) async {
-    final box = HiveHelper.usuariosBoxInstance;
-    final id = box.length + 1;
-    usuario.id = id;
-    await box.put(id, usuario);
-    await box.flush();
-    return id;
+Future<int> createUsuario(Usuario usuario) async {
+  final box = HiveHelper.usuariosBoxInstance;
+  // El usuario ya debe venir con ID asignado
+  if (usuario.id == null) {
+    throw Exception('El usuario debe tener un ID asignado');
   }
+  
+  await box.put(usuario.id!, usuario);
+  await box.flush();
+  return usuario.id!;
+}
 
   @override
   Future<void> updateUsuario(Usuario usuario) async {

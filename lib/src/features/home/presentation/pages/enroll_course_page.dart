@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/enroll_course_controller.dart';
+import '../../domain/entities/curso_entity.dart';
 
 class EnrollCoursePage extends StatelessWidget {
   const EnrollCoursePage({super.key});
@@ -503,7 +504,7 @@ class EnrollCoursePage extends StatelessWidget {
     );
   }
 
-  Widget _buildFloatingActionButton(EnrollCourseController controller) {
+  Widget? _buildFloatingActionButton(EnrollCourseController controller) {
     return Obx(() {
       final hasSelection = controller.seleccionado.value >= 0;
       

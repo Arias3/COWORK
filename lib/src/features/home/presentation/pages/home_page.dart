@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../../domain/entities/curso_entity.dart';
-import '../../../categories/presentation/pages/category_list_page.dart';
+import './new_course_page.dart';
+import '../../../auth/presentation/controllers/login_controller.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -31,14 +32,14 @@ class HomePage extends StatelessWidget {
               radius: 22,
               backgroundColor: Colors.blue.withOpacity(0.1),
               child: Text(
-                controller
+                (controller.authController.currentUser.value != null &&
+                        controller
                             .authController
                             .currentUser
-                            .value
-                            ?.nombre
-                            ?.isNotEmpty ==
-                        true
-                    ? controller.authController.currentUser.value!.nombre![0]
+                            .value!
+                            .nombre
+                            .isNotEmpty)
+                    ? controller.authController.currentUser.value!.nombre[0]
                           .toUpperCase()
                     : 'U',
                 style: const TextStyle(
@@ -49,78 +50,192 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '¡Hola!',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.normal,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '¡Hola!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.normal,
+                    ),
                   ),
-                ),
-                Text(
-                  controller.authController.currentUser.value?.nombre ??
-                      'Usuario',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    controller.authController.currentUser.value?.nombre ??
+                        'Usuario',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.grey),
-          onPressed: () {
-            Get.snackbar(
-              'Notificaciones',
-              'No tienes notificaciones nuevas',
-              backgroundColor: Colors.blue,
-              colorText: Colors.white,
-              icon: const Icon(Icons.notifications, color: Colors.white),
-            );
+        // Usar Builder para acceder al MediaQuery
+        Builder(
+          builder: (context) {
+            final isSmallScreen = MediaQuery.of(context).size.width < 400;
+
+            if (isSmallScreen) {
+              // En pantallas pequeñas, usar PopupMenuButton
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.grey),
+                onSelected: (value) async {
+                  switch (value) {
+                    case 'notifications':
+                      Get.snackbar(
+                        'Notificaciones',
+                        'No tienes notificaciones nuevas',
+                        backgroundColor: Colors.blue,
+                        colorText: Colors.white,
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
+                      );
+                      break;
+                    case 'refresh':
+                      controller.refreshData();
+                      break;
+                    case 'logout':
+                      final authController =
+                          Get.find<AuthenticationController>();
+                      await authController.logOut();
+                      Get.offAllNamed('/login');
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'notifications',
+                    child: Row(
+                      children: [
+                        Icon(Icons.notifications_outlined, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text('Notificaciones'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'refresh',
+                    child: Obx(
+                      () => Row(
+                        children: [
+                          controller.isLoadingDictados.value ||
+                                  controller.isLoadingInscritos.value
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.refresh, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          const Text('Actualizar'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Cerrar sesión'),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              // En pantallas grandes, mostrar todos los botones
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      Get.snackbar(
+                        'Notificaciones',
+                        'No tienes notificaciones nuevas',
+                        backgroundColor: Colors.blue,
+                        colorText: Colors.white,
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                  Obx(
+                    () => IconButton(
+                      icon:
+                          controller.isLoadingDictados.value ||
+                              controller.isLoadingInscritos.value
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh, color: Colors.blue),
+                      onPressed: controller.refreshData,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    onPressed: () async {
+                      final authController =
+                          Get.find<AuthenticationController>();
+                      await authController.logOut();
+                      Get.offAllNamed('/login');
+                    },
+                    tooltip: 'Cerrar sesión',
+                  ),
+                ],
+              );
+            }
           },
         ),
-        Obx(
-          () => IconButton(
-            icon:
-                controller.isLoadingDictados.value ||
-                    controller.isLoadingInscritos.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh, color: Colors.grey),
-            onPressed: controller.refreshData,
-          ),
-        ),
-        const SizedBox(width: 8),
       ],
     );
   }
 
   Widget _buildBody(HomeController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeCard(controller),
-          const SizedBox(height: 24),
-          _buildStatsRow(controller),
-          const SizedBox(height: 24),
-          _buildTabBar(controller),
-          const SizedBox(height: 16),
-          _buildTabContent(controller),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 600;
+        final padding = isSmallScreen ? 12.0 : 16.0;
+        final spacing = isSmallScreen ? 16.0 : 24.0;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWelcomeCard(controller),
+              SizedBox(height: spacing),
+              _buildStatsRow(controller),
+              SizedBox(height: spacing),
+              _buildTabBar(controller),
+              const SizedBox(height: 16),
+              _buildTabContent(controller),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -187,43 +302,111 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildStatsRow(HomeController controller) {
-    return Obx(
-      () => Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              title: 'Dictados',
-              value: controller.dictados.length.toString(),
-              icon: Icons.school,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              title: 'Inscritos',
-              value: controller.inscritos.length.toString(),
-              icon: Icons.library_books,
-              color: Colors.green,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              title: 'Estudiantes',
-              value: controller.dictados
-                  .fold(
-                    0,
-                    (sum, curso) => sum + curso.estudiantesNombres.length,
-                  )
-                  .toString(),
-              icon: Icons.people,
-              color: Colors.orange,
-            ),
-          ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 600;
+
+        if (isSmallScreen) {
+          // En pantallas pequeñas, usar Column con 2 filas
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Obx(
+                      () => _buildStatCard(
+                        title: 'Dictados',
+                        value: controller.dictados.length.toString(),
+                        icon: Icons.school,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Obx(
+                      () => _buildStatCard(
+                        title: 'Inscritos',
+                        value: controller.inscritos.length.toString(),
+                        icon: Icons.library_books,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FutureBuilder<int>(
+                  future: _getTotalEstudiantesReales(controller),
+                  builder: (context, snapshot) {
+                    return _buildStatCard(
+                      title: 'Estudiantes',
+                      value: snapshot.data?.toString() ?? '...',
+                      icon: Icons.people,
+                      color: Colors.orange,
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        } else {
+          // En pantallas grandes, usar Row horizontal
+          return Row(
+            children: [
+              Expanded(
+                child: Obx(
+                  () => _buildStatCard(
+                    title: 'Dictados',
+                    value: controller.dictados.length.toString(),
+                    icon: Icons.school,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Obx(
+                  () => _buildStatCard(
+                    title: 'Inscritos',
+                    value: controller.inscritos.length.toString(),
+                    icon: Icons.library_books,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FutureBuilder<int>(
+                  future: _getTotalEstudiantesReales(controller),
+                  builder: (context, snapshot) {
+                    return _buildStatCard(
+                      title: 'Estudiantes',
+                      value: snapshot.data?.toString() ?? '...',
+                      icon: Icons.people,
+                      color: Colors.orange,
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+      },
     );
+  }
+
+  Future<int> _getTotalEstudiantesReales(HomeController controller) async {
+    int total = 0;
+    for (var curso in controller.dictados) {
+      final numEstudiantes = await controller.getNumeroEstudiantesReales(
+        curso.id!,
+      );
+      total += numEstudiantes;
+    }
+    return total;
   }
 
   Widget _buildStatCard({
@@ -446,7 +629,9 @@ class HomePage extends StatelessWidget {
               title: 'No hay cursos dictados',
               subtitle: 'Crea tu primer curso para comenzar a enseñar',
               actionText: 'Crear Curso',
-              onAction: controller.crearCurso,
+              onAction: () {
+                Get.to(() => NewCoursePage());
+              },
               color: Colors.blue,
             );
           }
@@ -533,9 +718,11 @@ class HomePage extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.75,
+        childAspectRatio: isDictado
+            ? 0.56
+            : 0.75, // Ajuste final para eliminar esos 2.3px
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -578,7 +765,7 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header con imagen y menú
+            // Header con imagen y menú (sin cambios)
             Expanded(
               flex: 3,
               child: Container(
@@ -602,7 +789,6 @@ class HomePage extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Imagen de fondo por defecto
                     Container(
                       width: double.infinity,
                       height: double.infinity,
@@ -630,7 +816,6 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Overlay gradient
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(
@@ -646,7 +831,6 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Menú de tres puntos (solo para dictados)
                     if (isDictado)
                       Positioned(
                         top: 12,
@@ -674,7 +858,6 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                    // Badge de estado
                     Positioned(
                       top: 12,
                       left: 12,
@@ -709,7 +892,6 @@ class HomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Título del curso
                     Text(
                       curso.nombre,
                       style: const TextStyle(
@@ -721,7 +903,6 @@ class HomePage extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    // Descripción
                     if (curso.descripcion.isNotEmpty)
                       Text(
                         curso.descripcion,
@@ -730,11 +911,11 @@ class HomePage extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     const Spacer(),
-                    // Footer con información adicional
+                    // ✅ ACTUALIZADO: Footer con contador real de estudiantes
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Estudiantes
+                        // ✅ Estudiantes con número real
                         Row(
                           children: [
                             Icon(
@@ -743,17 +924,28 @@ class HomePage extends StatelessWidget {
                               color: Colors.grey[600],
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              '${curso.estudiantesNombres.length}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
+                            FutureBuilder<int>(
+                              future: isDictado
+                                  ? controller.getNumeroEstudiantesReales(
+                                      curso.id!,
+                                    )
+                                  : Future.value(
+                                      1,
+                                    ), // Para cursos inscritos, siempre hay al menos 1 (tú)
+                              builder: (context, snapshot) {
+                                return Text(
+                                  '${snapshot.data ?? '...'}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
-                        // Categorías (primera categoría)
+                        // Categorías
                         if (curso.categorias.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -777,6 +969,48 @@ class HomePage extends StatelessWidget {
                           ),
                       ],
                     ),
+                    // Botón de gestionar equipos (solo para dictados)
+                    if (isDictado) ...[
+                      const SizedBox(
+                        height: 6,
+                      ), // Reducido a 6 para eliminar overflow final
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              controller.abrirGestionEquipos(curso),
+                          icon: const Icon(
+                            Icons.groups,
+                            size: 14,
+                          ), // Reducido de 16 a 14
+                          label: const Text(
+                            'Gestionar Equipos',
+                            style: TextStyle(
+                              fontSize: 11,
+                            ), // Reducido de 12 a 11
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: const BorderSide(
+                              color: Colors.blue,
+                              width: 1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical:
+                                  4, // Reducido a 4 para eliminar overflow final
+                              horizontal: 10, // Reducido de 12 a 10
+                            ),
+                            minimumSize: const Size(
+                              0,
+                              24,
+                            ), // Altura mínima aún más pequeña
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -835,32 +1069,33 @@ class HomePage extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.people, color: Colors.green),
                     title: const Text('Ver Estudiantes'),
-                    subtitle: Text(
-                      '${curso.estudiantesNombres.length} estudiantes',
+                    subtitle: FutureBuilder<int>(
+                      future: controller.getNumeroEstudiantesReales(curso.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Text('Cargando...');
+                        }
+                        final numEstudiantes = snapshot.data ?? 0;
+                        return Text(
+                          '$numEstudiantes estudiante(s) inscrito(s)',
+                        );
+                      },
                     ),
                     onTap: () {
                       Get.back();
                       _mostrarEstudiantes(curso);
                     },
                   ),
-
-                  ListTile(
-                    leading: const Icon(Icons.people, color: Colors.green),
-                    title: const Text('Ver Categorías'),
-                    onTap: () {
-                      Get.back();
-                      Get.toNamed('/categories', arguments: curso);
-                    },
-                  ),
                   ListTile(
                     leading: const Icon(Icons.share, color: Colors.purple),
                     title: const Text('Compartir Código'),
-                    subtitle: Text('Código: ${curso.codigoRegistro ?? 'N/A'}'),
+                    subtitle: Text('Código: ${curso.codigoRegistro}'),
                     onTap: () {
                       Get.back();
                       Get.snackbar(
                         'Código de Registro',
-                        'Código: ${curso.codigoRegistro ?? 'N/A'}',
+                        'Código: ${curso.codigoRegistro}',
                         backgroundColor: Colors.purple,
                         colorText: Colors.white,
                         duration: const Duration(seconds: 5),
@@ -887,38 +1122,8 @@ class HomePage extends StatelessWidget {
   }
 
   void _mostrarEstudiantes(CursoDomain curso) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('Estudiantes de ${curso.nombre}'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: curso.estudiantesNombres.isEmpty
-              ? const Text('No hay estudiantes inscritos')
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: curso.estudiantesNombres.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue.withOpacity(0.1),
-                        child: Text(
-                          curso.estudiantesNombres[index][0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      title: Text(curso.estudiantesNombres[index]),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cerrar')),
-        ],
-      ),
-    );
+    final controller = Get.find<HomeController>();
+    controller.mostrarEstudiantesReales(curso);
   }
 
   void _mostrarDialogoInscripcion(HomeController controller) {
@@ -1121,14 +1326,16 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildFloatingActionButton(HomeController controller) {
+  Widget? _buildFloatingActionButton(HomeController controller) {
     return Obx(
       () => AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: controller.selectedTab.value == 0
             ? FloatingActionButton.extended(
                 key: const ValueKey('dictados'),
-                onPressed: controller.crearCurso,
+                onPressed: () {
+                  Get.to(() => NewCoursePage());
+                },
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.add),

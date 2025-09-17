@@ -1,3 +1,4 @@
+// lib/features/categories/presentation/pages/category_form_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/category_controller.dart';
@@ -42,20 +43,17 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
       activityController.getActivities(categoryId: widget.category!.id);
     }
 
-    // Intentar obtener curso (constructor primero, luego Get.arguments)
+    // Intentar obtener curso
     cursoObject = widget.curso;
     if (cursoObject == null) {
       final args = Get.arguments;
       if (args != null && args is CursoDomain) cursoObject = args;
-      // si en tu app envías Map {'curso': curso}, adapta: args['curso']
       if (cursoObject == null && args is Map && args['curso'] is CursoDomain) {
         cursoObject = args['curso'] as CursoDomain;
       }
     }
 
     cursoId = widget.category?.cursoId ?? cursoObject?.id;
-    // Debug
-    print('CategoryFormPage.init - category=${widget.category}, cursoObject=$cursoObject, cursoId=$cursoId');
   }
 
   @override
@@ -66,13 +64,10 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
   }
 
   Future<void> _saveCategory() async {
-    if (!_formKey.currentState!.validate()) {
-      print('CategoryFormPage._saveCategory - formulario inválido');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     if (cursoId == null) {
-      Get.snackbar('Error', 'No se pudo determinar el curso asociado. Abre la página desde el curso.');
+      Get.snackbar('Error', 'No se pudo determinar el curso asociado.');
       return;
     }
 
@@ -87,129 +82,191 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
     try {
       if (widget.category == null) {
         final id = await categoryController.addCategory(category);
-        print('CategoryFormPage._saveCategory - create returned id=$id');
         if (id > 0) {
-          // Actualizar curso en Hive si está disponible
           if (cursoObject != null) {
-            cursoObject!.categorias = List<String>.from(cursoObject!.categorias)..add(category.nombre);
+            cursoObject!.categorias = List<String>.from(cursoObject!.categorias)
+              ..add(category.nombre);
             try {
               await cursoObject!.save();
-            } catch (_) {
-              // ignore
-            }
+            } catch (_) {}
           }
           Get.snackbar('Éxito', 'Categoría creada correctamente');
-          // -------------- USE Navigator.pop para asegurar que se cierre el Navigator correcto --------------
-          print('CategoryFormPage._saveCategory - pop true (create)');
           Navigator.of(context).pop(true);
-          return;
         } else {
           Get.snackbar('Error', 'No se pudo crear la categoría');
-          return;
         }
       } else {
         final success = await categoryController.editCategory(category);
-        print('CategoryFormPage._saveCategory - update returned $success');
         if (success) {
           Get.snackbar('Éxito', 'Categoría actualizada');
-          print('CategoryFormPage._saveCategory - pop true (update)');
           Navigator.of(context).pop(true);
-          return;
         } else {
           Get.snackbar('Error', 'No se pudo actualizar la categoría');
-          return;
         }
       }
-    } catch (e, st) {
-      print('CategoryFormPage._saveCategory - ERROR: $e\n$st');
+    } catch (e) {
       Get.snackbar('Error', 'Ocurrió un error: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.category != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.category == null ? 'Nueva Categoría' : 'Editar Categoría'),
+        title: Text(isEdit ? 'Editar Categoría' : 'Nueva Categoría',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 4,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
             children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nombre de la categoría'),
-                validator: (value) => value == null || value.isEmpty ? 'Ingrese un nombre' : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<MetodoAgrupacion>(
-                value: _selectedMethod,
-                items: MetodoAgrupacion.values.map((m) => DropdownMenuItem(value: m, child: Text(m.name))).toList(),
-                onChanged: (v) => setState(() => _selectedMethod = v),
-                decoration: const InputDecoration(labelText: 'Método de agrupación'),
-                validator: (value) => value == null ? 'Seleccione un método' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _maxMembersController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Máx. miembros por grupo'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Ingrese un número';
-                  if (int.tryParse(value) == null) return 'Ingrese un número válido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(onPressed: _saveCategory, child: Text(widget.category == null ? 'Crear' : 'Guardar')),
-              const SizedBox(height: 20),
-              if (widget.category != null) ...[
-                const Divider(),
-                Text('Actividades', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: Obx(() {
-                    final activities = activityController.activities.where((a) => a.categoryId == widget.category!.id).toList();
-                    if (activities.isEmpty) return const Text('No hay actividades aún');
-                    return ListView.builder(
-                      itemCount: activities.length,
-                      itemBuilder: (_, i) {
-                        final act = activities[i];
-                        return Card(
-                          child: ListTile(
-                            title: Text(act.name),
-                            subtitle: Text(act.description),
-                            onTap: () {
-                              Get.toNamed('/addactivity', arguments: {'categoryId': widget.category!.id, 'activity': act});
-                            },
-                          ),
-                        );
-                      },
-                    );
-                  }),
+              Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre de la categoría',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Ingrese un nombre' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<MetodoAgrupacion>(
+                        value: _selectedMethod,
+                        items: MetodoAgrupacion.values
+                            .map((m) => DropdownMenuItem(
+                                  value: m,
+                                  child: Text(m.name),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedMethod = v),
+                        decoration: const InputDecoration(
+                          labelText: 'Método de agrupación',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) =>
+                            v == null ? 'Seleccione un método' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _maxMembersController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Máx. miembros por grupo',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingrese un número';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Ingrese un número válido';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _saveCategory,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: Icon(isEdit ? Icons.save : Icons.check, color: Colors.white),
+                label: Text(
+                  isEdit ? 'Guardar cambios' : 'Crear categoría',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (isEdit) ...[
+                const Divider(),
+                Text('Actividades',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 10),
+                Obx(() {
+                  final activities = activityController.activities
+                      .where((a) => a.categoryId == widget.category!.id)
+                      .toList();
+                  if (activities.isEmpty) {
+                    return const Text('No hay actividades aún');
+                  }
+                  return Column(
+                    children: activities.map((act) {
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.blueAccent,
+                            child: Icon(Icons.assignment, color: Colors.white),
+                          ),
+                          title: Text(act.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(act.description),
+                          onTap: () {
+                            Get.toNamed('/addactivity', arguments: {
+                              'categoryId': widget.category!.id,
+                              'activity': act
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }),
               ],
             ],
           ),
         ),
       ),
-      floatingActionButton: widget.category != null
-          ? FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-                  builder: (_) => Padding(
-                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                    child: ActivityFormPage(categoryId: widget.category!.id!),
-                  ),
-                ).then((_) => activityController.getActivities());
-              },
-              child: const Icon(Icons.add),
+      floatingActionButton: isEdit
+          ? Tooltip(
+              message: "Agregar nueva actividad",
+              child: FloatingActionButton(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (_) => Padding(
+                      padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom),
+                      child: ActivityFormPage(categoryId: widget.category!.id!),
+                    ),
+                  ).then((_) => activityController.getActivities());
+                },
+                child: const Icon(Icons.add, size: 28, color: Colors.white),
+              ),
             )
           : null,
     );

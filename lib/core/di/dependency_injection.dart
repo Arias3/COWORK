@@ -1,97 +1,109 @@
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
+import '../data/database/hive_helper.dart';
 
-import 'package:cowork_app/src/features/categories/data/repositories/hive_category_repository.dart';
-import 'package:cowork_app/src/features/categories/domain/entities/category.dart';
+// Repositorios existentes
+import '../../src/features/auth/data/repositories/usuario_repository_impl.dart';
+import '../../src/features/home/data/repositories/curso_repository_impl.dart';
+import '../../src/features/home/data/repositories/inscripcion_repository_impl.dart';
 
-import '../../../src/features/auth/data/repositories/usuario_repository_impl.dart';
-import '../../../src/features/home/data/repositories/curso_repository_impl.dart';
-import '../../../src/features/home/data/repositories/inscripcion_repository_impl.dart';
-import '../../../src/features/auth/domain/repositories/usuario_repository.dart';
-import '../../../src/features/home/domain/repositories/curso_repository.dart';
-import '../../../src/features/home/domain/repositories/inscripcion_repository.dart';
-import '../../../src/features/auth/domain/use_case/usuario_usecase.dart';
-import '../../../src/features/home/domain/use_case/curso_usecase.dart';
-import '../../../src/features/auth/presentation/controllers/login_controller.dart';
-import '../../../src/features/home/presentation/controllers/home_controller.dart';
-import '../../../src/features/home/presentation/controllers/enroll_course_controller.dart';
-import '../../../src/features/home/presentation/controllers/new_course_controller.dart';
+// Nuevos repositorios
+import '../../src/features/categories/data/repositories/categoria_equipo_repository_impl.dart';
+import '../../src/features/categories/data/repositories/equipo_repository_impl.dart';
 
-import '../../../src/features/activities/domain/models/activity.dart';
-import '../../../src/features/activities/domain/repositories/i_activity_repository.dart';
-import '../../../src/features/activities/data/datasources/local/hive_activity_repository.dart';
-import '../../../src/features/activities/domain/usecases/activity_usecase.dart';
-import '../../../src/features/activities/presentation/controllers/activity_controller.dart';
+// Interfaces de repositorios existentes
+import '../../src/features/auth/domain/repositories/usuario_repository.dart';
+import '../../src/features/home/domain/repositories/curso_repository.dart';
+import '../../src/features/home/domain/repositories/inscripcion_repository.dart';
 
-import '../../../src/features/categories/presentation/controllers/category_controller.dart';
-import '../../../src/features/categories/domain/usecases/category_usecases.dart';
+// Nuevas interfaces de repositorios
+import '../../src/features/categories/domain/repositories/categoria_equipo_repository.dart';
+import '../../src/features/categories/domain/repositories/equipo_repository.dart';
+
+// Casos de uso existentes
+import '../../src/features/auth/domain/use_case/usuario_usecase.dart';
+import '../../src/features/home/domain/use_case/curso_usecase.dart';
+
+// Nuevo caso de uso
+import '../../src/features/categories/domain/use_case/categoria_equipo_usecase.dart';
+
+// Controladores existentes
+import '../../src/features/auth/presentation/controllers/login_controller.dart';
+import '../../src/features/home/presentation/controllers/home_controller.dart';
+import '../../src/features/home/presentation/controllers/enroll_course_controller.dart';
+import '../../src/features/home/presentation/controllers/new_course_controller.dart';
+
+// Nuevo controlador
+import '../../src/features/categories/presentation/controllers/categoria_equipo_controller.dart';
 
 class DependencyInjection {
   static Future<void> init() async {
-    // ==========================
-    // 🔹 Repositorios base
-    // ==========================
-    Get.lazyPut<UsuarioRepository>(() => UsuarioRepositoryImpl());
-    Get.lazyPut<CursoRepository>(() => CursoRepositoryImpl());
-    Get.lazyPut<InscripcionRepository>(() => InscripcionRepositoryImpl());
+    // ========================================================================
+    // REPOSITORIOS EXISTENTES
+    // ========================================================================
+    Get.put<UsuarioRepository>(UsuarioRepositoryImpl(), permanent: true);
+    Get.put<CursoRepository>(CursoRepositoryImpl(), permanent: true);
+    Get.put<InscripcionRepository>(InscripcionRepositoryImpl(), permanent: true);
 
-    // ==========================
-    // 🔹 Activities con Hive
-    // ==========================
+    // ========================================================================
+    // NUEVOS REPOSITORIOS
+    // ========================================================================
+    Get.put<CategoriaEquipoRepository>(CategoriaEquipoRepositoryImpl(), permanent: true);
+    Get.put<EquipoRepository>(EquipoRepositoryImpl(), permanent: true);
 
-    final activityBox = await Hive.openBox<Activity>('activities');
-    final activityRepo = ActivityHiveRepository(activityBox);
-    Get.put<IActivityRepository>(activityRepo);
-    Get.put(ActivityUseCase(Get.find<IActivityRepository>()));
-    Get.put(ActivityController());
+    // ========================================================================
+    // CASOS DE USO EXISTENTES
+    // ========================================================================
+    Get.put<UsuarioUseCase>(UsuarioUseCase(Get.find<UsuarioRepository>()), permanent: true);
+    Get.put<CursoUseCase>(CursoUseCase(
+      Get.find<CursoRepository>(),
+      Get.find<InscripcionRepository>(),
+    ), permanent: true);
 
-    // ==========================
-    // 🔹 Categories con Hive
-    // ==========================
- 
-    final categoryBox = await Hive.openBox<Category>('categories');
-    final categoryRepo = HiveCategoryRepository(categoryBox);
-    final categoryUseCases = CategoryUseCases(
-      createCategory: CreateCategory(categoryRepo),
-      getCategories: GetCategories(categoryRepo),
-      getCategoriesByCurso: GetCategoriesByCurso(categoryRepo),
-      updateCategory: UpdateCategory(categoryRepo),
-      deleteCategory: DeleteCategory(categoryRepo),
-    );
-    Get.put(CategoryController(categoryUseCases));
+    // ========================================================================
+    // NUEVO CASO DE USO
+    // ========================================================================
+    Get.put<CategoriaEquipoUseCase>(CategoriaEquipoUseCase(
+      Get.find<CategoriaEquipoRepository>(),
+      Get.find<EquipoRepository>(),
+      Get.find<InscripcionRepository>(),
+      Get.find<UsuarioRepository>(),
+    ), permanent: true);
 
-    // ==========================
-    // 🔹 Use Cases
-    // ==========================
-    Get.lazyPut(() => UsuarioUseCase(Get.find<UsuarioRepository>()));
-    Get.lazyPut(
-      () => CursoUseCase(
-        Get.find<CursoRepository>(),
-        Get.find<InscripcionRepository>(),
-      ),
+    // ========================================================================
+    // CONTROLADOR CRÍTICO - AuthenticationController DEBE ir PRIMERO como Put
+    // ========================================================================
+    // CAMBIO PRINCIPAL: De lazyPut a put con permanent: true
+    Get.put<AuthenticationController>(
+      AuthenticationController(Get.find<UsuarioUseCase>()),
+      permanent: true,
     );
 
-    // ==========================
-    // 🔹 Controllers
-    // ==========================
-    Get.lazyPut(() => AuthenticationController(Get.find<UsuarioUseCase>()));
-    Get.lazyPut(
-      () => HomeController(
-        Get.find<CursoUseCase>(),
-        Get.find<AuthenticationController>(),
-      ),
-    );
-    Get.lazyPut(
-      () => EnrollCourseController(
-        Get.find<CursoUseCase>(),
-        Get.find<AuthenticationController>(),
-      ),
-    );
-    Get.lazyPut(
-      () => NewCourseController(
-        Get.find<CursoUseCase>(),
-        Get.find<AuthenticationController>(),
-      ),
-    );
+    // ========================================================================
+    // RESTO DE CONTROLADORES
+    // ========================================================================
+    Get.lazyPut<HomeController>(() => HomeController(
+      Get.find<CursoUseCase>(),
+      Get.find<AuthenticationController>(), // Ahora ya existe
+      Get.find<UsuarioUseCase>(),
+    ), fenix: true);
+
+    Get.lazyPut<EnrollCourseController>(() => EnrollCourseController(
+      Get.find<CursoUseCase>(),
+      Get.find<AuthenticationController>(), // Ahora ya existe
+    ));
+
+    Get.lazyPut<NewCourseController>(() => NewCourseController(
+      Get.find<CursoUseCase>(),
+      Get.find<AuthenticationController>(), // Ahora ya existe
+      Get.find<UsuarioUseCase>(),
+    ), fenix: true);
+
+    // ========================================================================
+    // NUEVO CONTROLADOR
+    // ========================================================================
+    Get.lazyPut<CategoriaEquipoController>(() => CategoriaEquipoController(
+      Get.find<CategoriaEquipoUseCase>(),
+      Get.find<AuthenticationController>(), // Ahora ya existe
+    ));
   }
 }
