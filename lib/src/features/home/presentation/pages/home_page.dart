@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../../domain/entities/curso_entity.dart';
 import './new_course_page.dart';
-import '../../../auth/presentation/controllers/login_controller.dart';
+import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -107,8 +107,8 @@ class HomePage extends StatelessWidget {
                       break;
                     case 'logout':
                       final authController =
-                          Get.find<AuthenticationController>();
-                      await authController.logOut();
+                          Get.find<RobleAuthLoginController>();
+                      await authController.logout();
                       Get.offAllNamed('/login');
                       break;
                   }
@@ -198,8 +198,8 @@ class HomePage extends StatelessWidget {
                     icon: const Icon(Icons.logout, color: Colors.red),
                     onPressed: () async {
                       final authController =
-                          Get.find<AuthenticationController>();
-                      await authController.logOut();
+                          Get.find<RobleAuthLoginController>();
+                      await authController.logout();
                       Get.offAllNamed('/login');
                     },
                     tooltip: 'Cerrar sesión',

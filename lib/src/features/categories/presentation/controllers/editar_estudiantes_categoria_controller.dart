@@ -1,7 +1,7 @@
 // editar_estudiantes_categoria_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../domain/use_case/categoria_equipo_usecase.dart';
+import '../../domain/usecases/categoria_equipo_usecase.dart';
 import '../../domain/entities/categoria_equipo_entity.dart';
 import '../../domain/entities/equipo_entity.dart';
 import '../../../auth/domain/entities/user_entity.dart';

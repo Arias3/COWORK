@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/use_case/curso_usecase.dart';
 import '../../domain/entities/curso_entity.dart';
-import '../../../auth/presentation/controllers/login_controller.dart';
+import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
 import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../../../core/routes/app_routes.dart';
 
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   final CursoUseCase cursoUseCase;
-  final AuthenticationController authController;
+  final RobleAuthLoginController authController;
   final UsuarioUseCase usuarioUseCase;
 
   HomeController(this.cursoUseCase, this.authController, this.usuarioUseCase);

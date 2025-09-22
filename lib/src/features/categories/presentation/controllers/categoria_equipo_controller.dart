@@ -1,17 +1,17 @@
 // categoria_equipo_controller.dart - CLEAN VERSION
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../domain/use_case/categoria_equipo_usecase.dart';
+import '../../domain/usecases/categoria_equipo_usecase.dart';
 import '../../domain/entities/categoria_equipo_entity.dart';
 import '../../domain/entities/equipo_entity.dart';
 import '../../../home/domain/entities/curso_entity.dart';
-import '../../../auth/presentation/controllers/login_controller.dart';
+import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../domain/entities/tipo_asignacion.dart';
 
 class CategoriaEquipoController extends GetxController {
   final CategoriaEquipoUseCase _categoriaEquipoUseCase;
-  final AuthenticationController _authController;
+  final RobleAuthLoginController _authController;
 
   CategoriaEquipoController(this._categoriaEquipoUseCase, this._authController);
 
@@ -49,20 +49,25 @@ class CategoriaEquipoController extends GetxController {
   // GESTIÓN DE PERMISOS
   // ============================================================================
 
-  bool get esProfesor {
-    return _authController.currentUser.value?.rol == 'profesor';
-  }
-
+  /// Verifica si el usuario actual es el profesor/creador de un curso específico
   bool esProfesorDelCurso(CursoDomain curso) {
     final currentUser = _authController.currentUser.value;
     if (currentUser == null) return false;
-    return esProfesor && currentUser.id == curso.profesorId;
+
+    // Un usuario es profesor de un curso si es quien lo creó (profesorId)
+    return currentUser.id == curso.profesorId;
   }
 
+  /// Verifica si el usuario actual es el profesor del curso actualmente cargado
   bool get esProfesorDelCursoActual {
     final curso = cursoActual.value;
     if (curso == null) return false;
     return esProfesorDelCurso(curso);
+  }
+
+  /// Alias para mantener compatibilidad con código existente
+  bool get esProfesor {
+    return esProfesorDelCursoActual;
   }
 
   // ============================================================================
@@ -925,7 +930,7 @@ class CategoriaEquipoController extends GetxController {
     selectedTab.value = index;
   }
 
-  AuthenticationController get authController => _authController;
+  RobleAuthLoginController get authController => _authController;
 
   void _showSuccessSnackbar(String title, String message) {
     Get.snackbar(

@@ -16,9 +16,7 @@ class CategoriasEquiposPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(
-      CategoriaEquipoController(Get.find(), Get.find()),
-    );
+    final controller = Get.find<CategoriaEquipoController>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.loadCategoriasPorCurso(curso);
@@ -533,47 +531,76 @@ class CategoriasEquiposPage extends StatelessWidget {
   }
 
   Widget _buildEstudianteView(CategoriaEquipoController controller) {
-    return Column(
-      children: [
-        _buildCategorySelector(controller),
-        Expanded(
-          child: Obx(() {
-            if (controller.categoriaSeleccionada.value == null) {
-              return const Center(child: Text('Selecciona una categoría'));
-            }
+    return Obx(() {
+      // Si no hay categorías, mostrar mensaje informativo
+      if (controller.categorias.isEmpty) {
+        return _buildEmptyStateForStudent(
+          'No hay categorías disponibles',
+          'El profesor aún no ha creado categorías para organizar equipos en este curso.',
+          Icons.category_outlined,
+        );
+      }
 
-            final categoria = controller.categoriaSeleccionada.value!;
-            final miEquipo = controller.miEquipo.value;
-
-            if (miEquipo != null) {
-              return _buildMiEquipoView(miEquipo, controller);
-            }
-
-            if (categoria.tipoAsignacion == TipoAsignacion.aleatoria) {
-              return const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.schedule, size: 64, color: Colors.orange),
-                    SizedBox(height: 16),
-                    Text(
-                      'Equipos pendientes',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      return Column(
+        children: [
+          _buildCategorySelector(controller),
+          Expanded(
+            child: Obx(() {
+              if (controller.categoriaSeleccionada.value == null) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.touch_app, size: 64, color: Colors.blue),
+                      SizedBox(height: 16),
+                      Text(
+                        'Selecciona una categoría',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text('El profesor aún no ha generado los equipos'),
-                  ],
-                ),
-              );
-            }
+                      Text(
+                        'Toca una categoría arriba para ver los equipos disponibles',
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-            return _buildEquiposDisponiblesView(controller);
-          }),
-        ),
-      ],
-    );
+              final categoria = controller.categoriaSeleccionada.value!;
+              final miEquipo = controller.miEquipo.value;
+
+              if (miEquipo != null) {
+                return _buildMiEquipoView(miEquipo, controller);
+              }
+
+              if (categoria.tipoAsignacion == TipoAsignacion.aleatoria) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.schedule, size: 64, color: Colors.orange),
+                      SizedBox(height: 16),
+                      Text(
+                        'Equipos pendientes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text('El profesor aún no ha generado los equipos'),
+                    ],
+                  ),
+                );
+              }
+
+              return _buildEquiposDisponiblesView(controller);
+            }),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildMiEquipoView(
@@ -700,6 +727,71 @@ class CategoriasEquiposPage extends StatelessWidget {
               onPressed: onPressed,
               icon: const Icon(Icons.add),
               label: const Text('Crear'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateForStudent(
+    String title,
+    String subtitle,
+    IconData icon,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Colors.blue.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Espera a que el profesor configure los equipos',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
