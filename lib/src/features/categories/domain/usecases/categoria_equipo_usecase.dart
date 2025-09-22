@@ -1,7 +1,7 @@
 import 'dart:math';
 import '../entities/categoria_equipo_entity.dart';
 import '../entities/equipo_entity.dart';
-import '../../../home/domain/entities/inscripcion_entity.dart';
+
 import '../repositories/categoria_equipo_repository.dart';
 import '../repositories/equipo_repository.dart';
 import '../../../home/domain/repositories/inscripcion_repository.dart';
@@ -89,8 +89,9 @@ class CategoriaEquipoUseCase {
     }
 
     // Obtener estudiantes inscritos en el curso
-    final inscripciones =
-        await _inscripcionRepository.getInscripcionesPorCurso(categoria.cursoId);
+    final inscripciones = await _inscripcionRepository.getInscripcionesPorCurso(
+      categoria.cursoId,
+    );
     final estudiantesIds = inscripciones.map((i) => i.usuarioId).toList();
 
     if (estudiantesIds.isEmpty) {
@@ -110,8 +111,10 @@ class CategoriaEquipoUseCase {
 
     for (int i = 0; i < numEquipos; i++) {
       final inicioIndex = i * categoria.maxEstudiantesPorEquipo;
-      final finIndex = (inicioIndex + categoria.maxEstudiantesPorEquipo)
-          .clamp(0, estudiantesIds.length);
+      final finIndex = (inicioIndex + categoria.maxEstudiantesPorEquipo).clamp(
+        0,
+        estudiantesIds.length,
+      );
 
       final estudiantesEquipo = estudiantesIds.sublist(inicioIndex, finIndex);
 
@@ -136,8 +139,9 @@ class CategoriaEquipoUseCase {
     final equipo = await _equipoRepository.getEquipoById(equipoId);
     if (equipo == null) throw Exception('Equipo no encontrado');
 
-    final categoria =
-        await _categoriaRepository.getCategoriaById(equipo.categoriaId);
+    final categoria = await _categoriaRepository.getCategoriaById(
+      equipo.categoriaId,
+    );
     if (categoria == null) throw Exception('Categoría no encontrada');
 
     if (categoria.tipoAsignacion != TipoAsignacion.manual) {
@@ -146,7 +150,9 @@ class CategoriaEquipoUseCase {
 
     // Verificar si ya está en un equipo de esta categoría
     final equipoActual = await _equipoRepository.getEquipoPorEstudiante(
-        estudianteId, categoria.id!);
+      estudianteId,
+      categoria.id!,
+    );
     if (equipoActual != null) {
       throw Exception('Ya estás en un equipo de esta categoría');
     }
@@ -163,7 +169,9 @@ class CategoriaEquipoUseCase {
 
   Future<void> salirDeEquipo(int estudianteId, int categoriaId) async {
     final equipo = await _equipoRepository.getEquipoPorEstudiante(
-        estudianteId, categoriaId);
+      estudianteId,
+      categoriaId,
+    );
     if (equipo == null) {
       throw Exception('No estás en ningún equipo de esta categoría');
     }
@@ -174,8 +182,9 @@ class CategoriaEquipoUseCase {
     }
 
     // Remover estudiante del equipo
-    equipo.estudiantesIds =
-        equipo.estudiantesIds.where((id) => id != estudianteId).toList();
+    equipo.estudiantesIds = equipo.estudiantesIds
+        .where((id) => id != estudianteId)
+        .toList();
     await _equipoRepository.updateEquipo(equipo);
   }
 
@@ -207,13 +216,14 @@ class CategoriaEquipoUseCase {
   /// Obtiene todos los estudiantes inscritos en un curso
   Future<List<Usuario>> getEstudiantesDelCurso(int cursoId) async {
     try {
-      final inscripciones = await _inscripcionRepository.getInscripcionesPorCurso(cursoId);
+      final inscripciones = await _inscripcionRepository
+          .getInscripcionesPorCurso(cursoId);
       final estudiantesIds = inscripciones.map((i) => i.usuarioId).toList();
-      
+
       if (estudiantesIds.isEmpty) return [];
-      
+
       final estudiantes = <Usuario>[];
-      
+
       // Obtener detalles de cada estudiante
       for (final id in estudiantesIds) {
         try {
@@ -225,7 +235,7 @@ class CategoriaEquipoUseCase {
           print('Error getting user $id: $e');
         }
       }
-      
+
       return estudiantes;
     } catch (e) {
       print('Error getting students from course: $e');
@@ -235,29 +245,36 @@ class CategoriaEquipoUseCase {
 
   /// Obtiene estudiantes disponibles para asignar a un equipo específico
   /// (estudiantes del curso que NO están en ningún equipo de la categoría)
-  Future<List<Usuario>> getEstudiantesDisponiblesParaEquipo(String equipoId, int categoriaId) async {
+  Future<List<Usuario>> getEstudiantesDisponiblesParaEquipo(
+    String equipoId,
+    int categoriaId,
+  ) async {
     try {
       // Obtener la categoría para saber a qué curso pertenece
-      final categoria = await _categoriaRepository.getCategoriaById(categoriaId);
+      final categoria = await _categoriaRepository.getCategoriaById(
+        categoriaId,
+      );
       if (categoria == null) return [];
-      
+
       // Obtener todos los estudiantes inscritos en el curso
       final todosEstudiantes = await getEstudiantesDelCurso(categoria.cursoId);
-      
+
       // Obtener todos los equipos de esta categoría
-      final equipos = await _equipoRepository.getEquiposPorCategoria(categoriaId);
-      
+      final equipos = await _equipoRepository.getEquiposPorCategoria(
+        categoriaId,
+      );
+
       // Recopilar IDs de estudiantes que ya están en equipos
       final estudiantesEnEquipos = <int>{};
       for (final equipo in equipos) {
         estudiantesEnEquipos.addAll(equipo.estudiantesIds);
       }
-      
+
       // Filtrar estudiantes disponibles (no están en ningún equipo de esta categoría)
       final disponibles = todosEstudiantes.where((estudiante) {
         return !estudiantesEnEquipos.contains(estudiante.id);
       }).toList();
-      
+
       return disponibles;
     } catch (e) {
       print('Error getting available students: $e');
@@ -266,57 +283,67 @@ class CategoriaEquipoUseCase {
   }
 
   /// Agrega un estudiante a un equipo específico
-  Future<void> agregarEstudianteAEquipo(String equipoId, String estudianteId) async {
+  Future<void> agregarEstudianteAEquipo(
+    String equipoId,
+    String estudianteId,
+  ) async {
     try {
       final equipo = await _equipoRepository.getEquipoById(int.parse(equipoId));
       if (equipo == null) throw Exception('Equipo no encontrado');
-      
-      final categoria = await _categoriaRepository.getCategoriaById(equipo.categoriaId);
+
+      final categoria = await _categoriaRepository.getCategoriaById(
+        equipo.categoriaId,
+      );
       if (categoria == null) throw Exception('Categoría no encontrada');
-      
+
       final studentIdInt = int.parse(estudianteId);
-      
+
       // Verificar si el estudiante ya está en este equipo
       if (equipo.estudiantesIds.contains(studentIdInt)) {
         throw Exception('El estudiante ya está en este equipo');
       }
-      
+
       // Verificar capacidad del equipo
       if (equipo.estudiantesIds.length >= categoria.maxEstudiantesPorEquipo) {
         throw Exception('El equipo ya está completo');
       }
-      
+
       // Verificar si el estudiante ya está en otro equipo de esta categoría
       final equipoActual = await _equipoRepository.getEquipoPorEstudiante(
-          studentIdInt, categoria.id!);
+        studentIdInt,
+        categoria.id!,
+      );
       if (equipoActual != null) {
-        throw Exception('El estudiante ya está en otro equipo de esta categoría');
+        throw Exception(
+          'El estudiante ya está en otro equipo de esta categoría',
+        );
       }
-      
+
       // Agregar estudiante al equipo
       equipo.estudiantesIds = [...equipo.estudiantesIds, studentIdInt];
       await _equipoRepository.updateEquipo(equipo);
-      
     } catch (e) {
       throw Exception('Error al agregar estudiante: $e');
     }
   }
 
   /// Remueve un estudiante de un equipo específico
-  Future<void> removerEstudianteDeEquipo(String equipoId, String estudianteId) async {
+  Future<void> removerEstudianteDeEquipo(
+    String equipoId,
+    String estudianteId,
+  ) async {
     try {
       final equipo = await _equipoRepository.getEquipoById(int.parse(equipoId));
       if (equipo == null) throw Exception('Equipo no encontrado');
-      
+
       final studentIdInt = int.parse(estudianteId);
-      
+
       // Remover estudiante del equipo
       equipo.estudiantesIds = equipo.estudiantesIds
           .where((id) => id != studentIdInt)
           .toList();
-          
+
       await _equipoRepository.updateEquipo(equipo);
-      
     } catch (e) {
       throw Exception('Error al remover estudiante: $e');
     }
@@ -335,7 +362,7 @@ class CategoriaEquipoUseCase {
       '#98D8C8',
       '#F7DC6F',
       '#BB8FCE',
-      '#85C1E9'
+      '#85C1E9',
     ];
     return colores[Random().nextInt(colores.length)];
   }

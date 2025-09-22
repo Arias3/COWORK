@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/enroll_course_controller.dart';
-import '../../domain/entities/curso_entity.dart';
 
 class EnrollCoursePage extends StatelessWidget {
   const EnrollCoursePage({super.key});
@@ -35,11 +34,7 @@ class EnrollCoursePage extends StatelessWidget {
               color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.login,
-              color: Colors.green,
-              size: 24,
-            ),
+            child: const Icon(Icons.login, color: Colors.green, size: 24),
           ),
           const SizedBox(width: 12),
           const Text(
@@ -154,11 +149,7 @@ class EnrollCoursePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.list_alt,
-                color: Colors.green,
-                size: 24,
-              ),
+              Icon(Icons.list_alt, color: Colors.green, size: 24),
               const SizedBox(width: 8),
               const Text(
                 'Cursos Disponibles',
@@ -199,11 +190,7 @@ class EnrollCoursePage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.green,
-                  size: 16,
-                ),
+                Icon(Icons.info_outline, color: Colors.green, size: 16),
                 const SizedBox(width: 8),
                 Text(
                   '${controller.cursos.length} cursos disponibles',
@@ -216,7 +203,10 @@ class EnrollCoursePage extends StatelessWidget {
                 const Spacer(),
                 if (controller.seleccionado.value >= 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(10),
@@ -253,10 +243,10 @@ class EnrollCoursePage extends StatelessWidget {
 
   Widget _buildCourseCard(EnrollCourseController controller, int index) {
     final curso = controller.cursos[index];
-    
+
     return Obx(() {
       final isSelected = controller.seleccionado.value == index;
-      
+
       return GestureDetector(
         onTap: () => controller.seleccionar(index),
         child: AnimatedContainer(
@@ -293,11 +283,7 @@ class EnrollCoursePage extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.school,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: const Icon(Icons.school, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 16),
               // Información del curso
@@ -321,7 +307,9 @@ class EnrollCoursePage extends StatelessWidget {
                         curso.descripcion,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isSelected ? Colors.green[600] : Colors.grey[600],
+                          color: isSelected
+                              ? Colors.green[600]
+                              : Colors.grey[600],
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -331,11 +319,7 @@ class EnrollCoursePage extends StatelessWidget {
                     // Información adicional
                     Row(
                       children: [
-                        Icon(
-                          Icons.people,
-                          size: 14,
-                          color: Colors.grey[500],
-                        ),
+                        Icon(Icons.people, size: 14, color: Colors.grey[500]),
                         const SizedBox(width: 4),
                         Text(
                           '${curso.estudiantesNombres.length} estudiantes',
@@ -378,11 +362,7 @@ class EnrollCoursePage extends StatelessWidget {
                     color: Colors.green,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
               ),
             ],
@@ -479,10 +459,7 @@ class EnrollCoursePage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Vuelve más tarde para ver nuevos cursos',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -507,7 +484,7 @@ class EnrollCoursePage extends StatelessWidget {
   Widget? _buildFloatingActionButton(EnrollCourseController controller) {
     return Obx(() {
       final hasSelection = controller.seleccionado.value >= 0;
-      
+
       return AnimatedScale(
         scale: hasSelection ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 300),
@@ -533,12 +510,10 @@ class EnrollCoursePage extends StatelessWidget {
 
   void _showSuccessDialog(EnrollCourseController controller) {
     final cursoSeleccionado = controller.cursos[controller.seleccionado.value];
-    
+
     Get.dialog(
       AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -568,10 +543,7 @@ class EnrollCoursePage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Te has inscrito correctamente en "${cursoSeleccionado.nombre}"',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),

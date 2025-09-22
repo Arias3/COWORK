@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
+
 import 'package:get/get.dart';
 import '../../domain/use_case/curso_usecase.dart';
-import '../../../auth/presentation/controllers/login_controller.dart';
+import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
 import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import './home_controller.dart';
 import 'dart:math';
 
-
-
 class NewCourseController extends GetxController {
   final CursoUseCase cursoUseCase;
-  final AuthenticationController authController;
+  final RobleAuthLoginController authController;
   final UsuarioUseCase usuarioUseCase;
 
   NewCourseController(
-    this.cursoUseCase, 
+    this.cursoUseCase,
     this.authController,
     this.usuarioUseCase,
   );
@@ -38,29 +36,37 @@ class NewCourseController extends GetxController {
 
   // Categorías disponibles
   var categorias = [
-    'Matemáticas', 'Programación', 'Diseño', 'Idiomas', 
-    'Ciencias', 'Arte', 'Negocios', 'Tecnología'
+    'Matemáticas',
+    'Programación',
+    'Diseño',
+    'Idiomas',
+    'Ciencias',
+    'Arte',
+    'Negocios',
+    'Tecnología',
   ].obs;
 
   @override
-void onInit() {
-  super.onInit();
-  print('🚀🚀🚀 CONTROLADOR DEBUG INICIADO 🚀🚀🚀');
-  print('NewCourseController con debug activo');
-  cargarEstudiantes();
-  
-  // Debug: Escuchar cambios en la búsqueda
-  debounce(searchQuery, (query) {
-    print('🔍 Búsqueda activa: "$query" (length: ${query.length})');
-    filtrarEstudiantes();
-    print('📊 Estudiantes disponibles después del filtro: ${estudiantesDisponibles.length}');
-  }, time: const Duration(milliseconds: 500));
-  
-  // Escuchar cambios en searchQuery para debug
-  ever(searchQuery, (String query) {
-    print('👂 SearchQuery cambió inmediatamente a: "$query"');
-  });
-}
+  void onInit() {
+    super.onInit();
+    print('🚀🚀🚀 CONTROLADOR DEBUG INICIADO 🚀🚀🚀');
+    print('NewCourseController con debug activo');
+    cargarEstudiantes();
+
+    // Debug: Escuchar cambios en la búsqueda
+    debounce(searchQuery, (query) {
+      print('🔍 Búsqueda activa: "$query" (length: ${query.length})');
+      filtrarEstudiantes();
+      print(
+        '📊 Estudiantes disponibles después del filtro: ${estudiantesDisponibles.length}',
+      );
+    }, time: const Duration(milliseconds: 500));
+
+    // Escuchar cambios en searchQuery para debug
+    ever(searchQuery, (String query) {
+      print('👂 SearchQuery cambió inmediatamente a: "$query"');
+    });
+  }
 
   // ========================================================================
   // MÉTODOS PARA CARGAR Y FILTRAR ESTUDIANTES (CON DEBUG)
@@ -70,31 +76,32 @@ void onInit() {
     try {
       isLoadingStudents.value = true;
       print('🔄 Iniciando carga de estudiantes desde BD...');
-      
+
       // Obtener todos los usuarios del sistema (tu lógica existente)
       final usuarios = await usuarioUseCase.getUsuarios();
       print('👥 Total usuarios obtenidos: ${usuarios.length}');
-      
+
       // Debug: mostrar primeros 3 usuarios para verificar datos
       if (usuarios.isNotEmpty) {
         print('📋 Primeros usuarios (sample):');
         for (var i = 0; i < usuarios.length && i < 3; i++) {
           final usuario = usuarios[i];
-          print('  - ${usuario.nombre} (${usuario.email}) - Rol: ${usuario.rol}');
+          print(
+            '  - ${usuario.nombre} (${usuario.email}) - Rol: ${usuario.rol}',
+          );
         }
       }
-      
+
       // Filtrar solo estudiantes (excluir profesores)
       todosLosEstudiantes.value = usuarios
           .where((usuario) => usuario.rol == 'estudiante')
           .toList();
-      
+
       print('🎓 Estudiantes filtrados: ${todosLosEstudiantes.length}');
-          
+
       // Inicialmente todos están disponibles
       estudiantesDisponibles.value = List.from(todosLosEstudiantes);
       print('✅ Lista inicial de disponibles: ${estudiantesDisponibles.length}');
-      
     } catch (e) {
       print('❌ Error en cargarEstudiantes: $e');
       Get.snackbar(
@@ -111,47 +118,59 @@ void onInit() {
 
   void filtrarEstudiantes() {
     print('\n🔧 === INICIANDO FILTRADO ===');
-    print('Query actual: "${searchQuery.value}" (length: ${searchQuery.value.length})');
+    print(
+      'Query actual: "${searchQuery.value}" (length: ${searchQuery.value.length})',
+    );
     print('Total en BD: ${todosLosEstudiantes.length}');
     print('Seleccionados: ${estudiantesSeleccionados.length}');
-    
+
     if (searchQuery.value.trim().isEmpty) {
       print('📝 Sin query - mostrando todos los disponibles');
       // Si no hay búsqueda, mostrar todos los disponibles
       estudiantesDisponibles.value = todosLosEstudiantes
-          .where((estudiante) => !estudiantesSeleccionados
-              .any((selected) => selected.id == estudiante.id))
+          .where(
+            (estudiante) => !estudiantesSeleccionados.any(
+              (selected) => selected.id == estudiante.id,
+            ),
+          )
           .toList();
     } else {
       print('🔍 Filtrando con query: "${searchQuery.value}"');
       // Filtrar por nombre o email
       final query = searchQuery.value.toLowerCase();
-      
+
       final resultados = <Usuario>[];
-      
+
       for (var estudiante in todosLosEstudiantes) {
         // Verificar si no está seleccionado
-        final yaSeleccionado = estudiantesSeleccionados
-            .any((selected) => selected.id == estudiante.id);
-        
+        final yaSeleccionado = estudiantesSeleccionados.any(
+          (selected) => selected.id == estudiante.id,
+        );
+
         if (!yaSeleccionado) {
           // Verificar si coincide con la búsqueda
-          final coincideNombre = estudiante.nombre.toLowerCase().contains(query);
+          final coincideNombre = estudiante.nombre.toLowerCase().contains(
+            query,
+          );
           final coincideEmail = estudiante.email.toLowerCase().contains(query);
-          
+
           if (coincideNombre || coincideEmail) {
             resultados.add(estudiante);
-            print('  ✓ Coincidencia: ${estudiante.nombre} (${estudiante.email})');
+            print(
+              '  ✓ Coincidencia: ${estudiante.nombre} (${estudiante.email})',
+            );
           }
         }
       }
-      
+
       estudiantesDisponibles.value = resultados;
     }
-    
-    print('✅ RESULTADO FINAL: ${estudiantesDisponibles.length} estudiantes disponibles');
+
+    print(
+      '✅ RESULTADO FINAL: ${estudiantesDisponibles.length} estudiantes disponibles',
+    );
     print('=== FIN FILTRADO ===\n');
-    
+
     // Forzar actualización de UI
     estudiantesDisponibles.refresh();
   }
@@ -162,13 +181,15 @@ void onInit() {
 
   void agregarEstudiante(Usuario estudiante) {
     print('➕ Agregando: ${estudiante.nombre}');
-    
+
     if (!estudiantesSeleccionados.any((e) => e.id == estudiante.id)) {
       estudiantesSeleccionados.add(estudiante);
-      print('  ✅ Agregado. Total seleccionados: ${estudiantesSeleccionados.length}');
-      
+      print(
+        '  ✅ Agregado. Total seleccionados: ${estudiantesSeleccionados.length}',
+      );
+
       filtrarEstudiantes(); // Actualizar lista disponible
-      
+
       Get.snackbar(
         'Agregado',
         'Estudiante "${estudiante.nombre}" agregado al curso',
@@ -184,10 +205,12 @@ void onInit() {
   void eliminarEstudiante(Usuario estudiante) {
     print('➖ Eliminando: ${estudiante.nombre}');
     estudiantesSeleccionados.removeWhere((e) => e.id == estudiante.id);
-    print('  ✅ Eliminado. Total seleccionados: ${estudiantesSeleccionados.length}');
-    
+    print(
+      '  ✅ Eliminado. Total seleccionados: ${estudiantesSeleccionados.length}',
+    );
+
     filtrarEstudiantes(); // Actualizar lista disponible
-    
+
     Get.snackbar(
       'Eliminado',
       'Estudiante "${estudiante.nombre}" eliminado del curso',
@@ -198,10 +221,12 @@ void onInit() {
   }
 
   void limpiarSeleccion() {
-    print('🧹 Limpiando ${estudiantesSeleccionados.length} estudiantes seleccionados');
+    print(
+      '🧹 Limpiando ${estudiantesSeleccionados.length} estudiantes seleccionados',
+    );
     estudiantesSeleccionados.clear();
     filtrarEstudiantes();
-    
+
     Get.snackbar(
       'Limpiado',
       'Se eliminaron todos los estudiantes seleccionados',
@@ -228,86 +253,88 @@ void onInit() {
   // ========================================================================
 
   Future<bool> crearCurso() async {
-  if (nombreCurso.value.trim().isEmpty) {
-    Get.snackbar(
-      'Error',
-      'El nombre del curso es obligatorio',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-    return false;
-  }
-
-  if (descripcion.value.trim().isEmpty) {
-    Get.snackbar(
-      'Error',
-      'La descripción del curso es obligatoria',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-    return false;
-  }
-
-  // Add registration code validation
-  if (!validarCodigoRegistro()) {
-    return false;
-  }
-
-  try {
-    isLoading.value = true;
-
-    final userId = authController.currentUser.value?.id;
-    if (userId == null) {
-      Get.snackbar('Error', 'Usuario no autenticado');
+    if (nombreCurso.value.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'El nombre del curso es obligatorio',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     }
 
-    final totalEstudiantes = estudiantesSeleccionados.length;
-    final estudiantesNombres = estudiantesSeleccionados.map((e) => e.nombre).toList();
+    if (descripcion.value.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'La descripción del curso es obligatoria',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
 
-    // Create the course with the registration code
-    final cursoId = await cursoUseCase.createCurso(
-      nombre: nombreCurso.value.trim(),
-      descripcion: descripcion.value.trim(),
-      profesorId: userId,
-      codigoRegistro: codigoRegistro.value.trim(), // Pass the registration code
-      categorias: selectedCategorias.toList(),
-      estudiantesNombres: estudiantesNombres,
-    );
+    // Add registration code validation
+    if (!validarCodigoRegistro()) {
+      return false;
+    }
 
-    // Auto-enroll students
-    await _inscribirEstudiantesAutomaticamente(cursoId);
+    try {
+      isLoading.value = true;
 
-    // Refresh home data
-    final homeController = Get.find<HomeController>();
-    await homeController.refreshData();
+      final userId = authController.currentUser.value?.id;
+      if (userId == null) {
+        Get.snackbar('Error', 'Usuario no autenticado');
+        return false;
+      }
 
-    // Clear form AFTER success
-    _limpiarFormulario();
+      final totalEstudiantes = estudiantesSeleccionados.length;
+      final estudiantesNombres = estudiantesSeleccionados
+          .map((e) => e.nombre)
+          .toList();
 
-    // Show success message
-    Get.snackbar(
-      'Éxito',
-      'Curso "${nombreCurso.value}" creado correctamente con código "${codigoRegistro.value}" y $totalEstudiantes estudiante(s) inscritos',
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 4),
-    );
+      // Create the course with the registration code
+      final cursoId = await cursoUseCase.createCurso(
+        nombre: nombreCurso.value.trim(),
+        descripcion: descripcion.value.trim(),
+        profesorId: userId,
+        codigoRegistro: codigoRegistro.value
+            .trim(), // Pass the registration code
+        categorias: selectedCategorias.toList(),
+        estudiantesNombres: estudiantesNombres,
+      );
 
-    return true;
-  } catch (e) {
-    Get.snackbar(
-      'Error',
-      'Error al crear curso: ${e.toString()}',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-    return false;
-  } finally {
-    isLoading.value = false;
+      // Auto-enroll students
+      await _inscribirEstudiantesAutomaticamente(cursoId);
+
+      // Refresh home data
+      final homeController = Get.find<HomeController>();
+      await homeController.refreshData();
+
+      // Clear form AFTER success
+      _limpiarFormulario();
+
+      // Show success message
+      Get.snackbar(
+        'Éxito',
+        'Curso "${nombreCurso.value}" creado correctamente con código "${codigoRegistro.value}" y $totalEstudiantes estudiante(s) inscritos',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Error al crear curso: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
-
 
   // ========================================================================
   // MÉTODO PARA INSCRIBIR ESTUDIANTES AUTOMÁTICAMENTE
@@ -325,13 +352,15 @@ void onInit() {
       for (final estudiante in estudiantesSeleccionados) {
         if (estudiante.id != null) {
           await cursoUseCase.inscribirseEnCurso(
-            estudiante.id!, 
+            estudiante.id!,
             curso!.codigoRegistro,
           );
         }
       }
-      
-      print('✅ ${estudiantesSeleccionados.length} estudiantes inscritos automáticamente');
+
+      print(
+        '✅ ${estudiantesSeleccionados.length} estudiantes inscritos automáticamente',
+      );
     } catch (e) {
       print('⚠️ Error al inscribir estudiantes automáticamente: $e');
       // No lanzamos el error para no interrumpir la creación del curso
@@ -349,14 +378,14 @@ void onInit() {
   // ========================================================================
 
   void _limpiarFormulario() {
-  nombreCurso.value = '';
-  descripcion.value = '';
-  codigoRegistro.value = ''; // Clear registration code
-  selectedCategorias.clear();
-  estudiantesSeleccionados.clear();
-  searchQuery.value = '';
-  filtrarEstudiantes();
-}
+    nombreCurso.value = '';
+    descripcion.value = '';
+    codigoRegistro.value = ''; // Clear registration code
+    selectedCategorias.clear();
+    estudiantesSeleccionados.clear();
+    searchQuery.value = '';
+    filtrarEstudiantes();
+  }
 
   // ========================================================================
   // MÉTODOS DE DIAGNÓSTICO Y VERIFICACIÓN (MEJORADOS)
@@ -372,7 +401,7 @@ void onInit() {
     print('  - Query: "${searchQuery.value}"');
     print('  - Query length: ${searchQuery.value.length}');
     print('  - Loading: ${isLoadingStudents.value}');
-    
+
     print('\n👥 Estudiantes en BD:');
     if (todosLosEstudiantes.isNotEmpty) {
       for (var i = 0; i < todosLosEstudiantes.length; i++) {
@@ -382,7 +411,7 @@ void onInit() {
     } else {
       print('  ❌ Lista vacía');
     }
-    
+
     print('\n📋 Estudiantes disponibles para UI:');
     if (estudiantesDisponibles.isNotEmpty) {
       for (var i = 0; i < estudiantesDisponibles.length; i++) {
@@ -392,7 +421,7 @@ void onInit() {
     } else {
       print('  ❌ Lista vacía');
     }
-    
+
     if (estudiantesSeleccionados.isNotEmpty) {
       print('\n✅ Estudiantes seleccionados:');
       for (var i = 0; i < estudiantesSeleccionados.length; i++) {
@@ -408,14 +437,16 @@ void onInit() {
     print('\n🔍 === DEBUG BÚSQUEDA ===');
     print('searchQuery.value: "${searchQuery.value}"');
     print('searchQuery.value.length: ${searchQuery.value.length}');
-    print('searchQuery.value.trim().isEmpty: ${searchQuery.value.trim().isEmpty}');
+    print(
+      'searchQuery.value.trim().isEmpty: ${searchQuery.value.trim().isEmpty}',
+    );
     print('estudiantesDisponibles.length: ${estudiantesDisponibles.length}');
     print('=== FIN DEBUG BÚSQUEDA ===\n');
   }
 
   int get totalEstudiantesDisponibles => estudiantesDisponibles.length;
   int get totalEstudiantesSeleccionados => estudiantesSeleccionados.length;
-  
+
   bool get hayEstudiantesSeleccionados => estudiantesSeleccionados.isNotEmpty;
   bool get hayEstudiantesDisponibles => estudiantesDisponibles.isNotEmpty;
 
@@ -427,36 +458,38 @@ void onInit() {
   }
 
   void generarCodigoAleatorio() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  final random = Random();
-  final codigo = String.fromCharCodes(Iterable.generate(
-    6, (_) => chars.codeUnitAt(random.nextInt(chars.length))
-  ));
-  codigoRegistro.value = codigo;
-}
-
-bool validarCodigoRegistro() {
-  if (codigoRegistro.value.trim().isEmpty) {
-    Get.snackbar(
-      'Error',
-      'El código de registro es obligatorio',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    final codigo = String.fromCharCodes(
+      Iterable.generate(
+        6,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
     );
-    return false;
+    codigoRegistro.value = codigo;
   }
-  
-  if (codigoRegistro.value.trim().length < 4) {
-    Get.snackbar(
-      'Error',
-      'El código debe tener al menos 4 caracteres',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-    return false;
-  }
-  
-  return true;
-}
 
+  bool validarCodigoRegistro() {
+    if (codigoRegistro.value.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'El código de registro es obligatorio',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    if (codigoRegistro.value.trim().length < 4) {
+      Get.snackbar(
+        'Error',
+        'El código debe tener al menos 4 caracteres',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+
+    return true;
+  }
 }
