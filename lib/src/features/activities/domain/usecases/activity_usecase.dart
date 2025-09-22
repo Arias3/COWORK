@@ -1,4 +1,4 @@
-import '../../../activities/domain/models/activity.dart';
+import '../entities/activity.dart';
 import '../repositories/i_activity_repository.dart';
 
 class ActivityUseCase {
@@ -21,8 +21,12 @@ class ActivityUseCase {
     String description,
     DateTime deliveryDate,
   ) async {
+    // Generar ID único basado en timestamp
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+
     await repository.addActivity(
       Activity(
+        id: id, // 🔹 Asignar ID único
         categoryId: categoryId, // 🔹 necesario
         name: name,
         description: description,
@@ -37,6 +41,5 @@ class ActivityUseCase {
   Future<void> deleteActivity(Activity activity) async =>
       await repository.deleteActivity(activity);
 
-  Future<void> deleteActivities() async =>
-      await repository.deleteActivities();
+  Future<void> deleteActivities() async => await repository.deleteActivities();
 }

@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:loggy/loggy.dart';
 
-import '../../../activities/domain/models/activity.dart';
+import '../../domain/entities/activity.dart';
 import '../../domain/usecases/activity_usecase.dart';
 
 class ActivityController extends GetxController {

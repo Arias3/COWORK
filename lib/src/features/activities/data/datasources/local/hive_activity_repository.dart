@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import '../../../domain/models/activity.dart';
+import '../../../domain/entities/activity.dart';
 import '../../../domain/repositories/i_activity_repository.dart';
 
 class ActivityHiveRepository implements IActivityRepository {
@@ -14,27 +14,38 @@ class ActivityHiveRepository implements IActivityRepository {
 
   @override
   Future<void> addActivity(Activity activity) async {
-    await box.add(activity);
+    // Usar el ID como clave en lugar de generación automática
+    if (activity.id != null) {
+      await box.put(activity.id, activity);
+    } else {
+      // Si no tiene ID, generar uno único
+      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+      final activityWithId = activity.copyWith(id: newId);
+      await box.put(newId, activityWithId);
+    }
   }
 
   @override
   Future<void> updateActivity(Activity activity) async {
-    // ✅ Opción 1: Guardar objeto inmutable usando su clave
-    if (activity.key != null) {
-      await box.put(activity.key, activity);
+    // Usar el ID como clave para actualizar
+    if (activity.id != null) {
+      await box.put(activity.id, activity);
     } else {
       throw HiveError(
-          "❌ No se puede actualizar: el objeto no tiene una clave en Hive");
+        "❌ No se puede actualizar: el objeto no tiene un ID válido",
+      );
     }
   }
 
   @override
   Future<void> deleteActivity(Activity activity) async {
-    if (activity.key != null) {
-      await box.delete(activity.key);
+    // Usar el ID como clave para eliminar
+    if (activity.id != null) {
+      await box.delete(activity.id);
     } else {
       throw HiveError(
-          "❌ No se puede eliminar: el objeto no tiene una clave en Hive");
+        "❌ No se puede eliminar: el objeto no tiene un ID válido",
+      );
     }
   }
 

@@ -1,5 +1,5 @@
 import 'package:loggy/loggy.dart';
-import '../../../../activities/domain/models/activity.dart';
+import '../../../domain/entities/activity.dart';
 import 'package:http/http.dart' as http;
 
 import 'i_remote_activity_source.dart';

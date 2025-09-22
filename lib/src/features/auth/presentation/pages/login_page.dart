@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/login_controller.dart';
 import 'package:cowork_app/src/features/auth/domain/use_case/usuario_usecase.dart';
+import '../../../../../core/routes/app_routes.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -256,7 +257,7 @@ class LoginPage extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
-                                Get.toNamed('/register');
+                                Get.toNamed(AppRoutes.register);
                               },
                               child: const Text(
                                 'Regístrate',

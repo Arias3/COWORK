@@ -5,13 +5,14 @@ import '../../domain/entities/curso_entity.dart';
 import '../../../auth/presentation/controllers/login_controller.dart';
 import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
+import '../../../../../core/routes/app_routes.dart';
 
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   final CursoUseCase cursoUseCase;
   final AuthenticationController authController;
   final UsuarioUseCase usuarioUseCase;
 
-  HomeController(this.cursoUseCase, this.authController,this.usuarioUseCase,);
+  HomeController(this.cursoUseCase, this.authController, this.usuarioUseCase);
 
   // Estados de UI
   var dictados = <CursoDomain>[].obs;
@@ -26,11 +27,16 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   // Categorías disponibles
   var categorias = [
-    'Matemáticas', 'Programación', 'Diseño', 'Idiomas', 
-    'Ciencias', 'Arte', 'Negocios', 'Tecnología'
+    'Matemáticas',
+    'Programación',
+    'Diseño',
+    'Idiomas',
+    'Ciencias',
+    'Arte',
+    'Negocios',
+    'Tecnología',
   ].obs;
 
-  
   @override
   void onInit() {
     super.onInit();
@@ -54,8 +60,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   }
 
   // =============== FUNCIONES PARA CURSOS DICTADOS ===============
-
-
 
   Future<void> eliminarCurso(CursoDomain curso) async {
     Get.dialog(
@@ -89,9 +93,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
                       children: [
                         Text(
                           curso.nombre,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           '${curso.estudiantesNombres.length} estudiantes',
@@ -109,10 +111,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
             const SizedBox(height: 8),
             const Text(
               'Esta acción no se puede deshacer.',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -131,7 +130,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
                 await cursoUseCase.deleteCurso(curso.id!);
                 Get.back();
                 await refreshData();
-                
+
                 Get.snackbar(
                   'Eliminado',
                   'Curso "${curso.nombre}" eliminado correctamente',
@@ -169,7 +168,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
       await cursoUseCase.inscribirseEnCurso(userId, codigoRegistro);
       await refreshData();
-      
+
       Get.snackbar(
         'Éxito',
         'Te has inscrito correctamente al curso',
@@ -198,7 +197,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     try {
       isLoadingDictados.value = true;
       isLoadingInscritos.value = true;
-      
+
       final userId = authController.currentUser.value?.id;
       if (userId == null) return;
 
@@ -209,7 +208,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       // Cargar cursos en los que está inscrito el usuario
       final cursosInscritos = await cursoUseCase.getCursosInscritos(userId);
       inscritos.assignAll(cursosInscritos);
-
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -231,40 +229,43 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void abrirGestionEquipos(CursoDomain curso) {
-  Get.toNamed('/categoria-equipos', arguments: curso);
-}
+    Get.toNamed(AppRoutes.categoriaEquipos, arguments: curso);
+  }
 
-Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
+  Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
     try {
       print('🔍 Obteniendo estudiantes reales del curso $cursoId');
-      
+
       // 1. Obtener todas las inscripciones del curso
-      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(cursoId);
+      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(
+        cursoId,
+      );
       print('📋 Inscripciones encontradas: ${inscripciones.length}');
-      
+
       if (inscripciones.isEmpty) {
         print('❌ No hay inscripciones para el curso $cursoId');
         return [];
       }
-      
+
       // 2. Obtener todos los usuarios del sistema
       final todosUsuarios = await usuarioUseCase.getUsuarios();
-      
+
       // 3. Filtrar solo los usuarios que están inscritos en este curso
       final estudiantesInscritos = <Usuario>[];
       for (var inscripcion in inscripciones) {
         final usuario = todosUsuarios.firstWhereOrNull(
-        (u) => u.id == inscripcion.usuarioId,
+          (u) => u.id == inscripcion.usuarioId,
         );
         if (usuario != null) {
           estudiantesInscritos.add(usuario);
-          print('✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})');
+          print(
+            '✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})',
+          );
         }
       }
-      
+
       print('🎓 Total estudiantes reales: ${estudiantesInscritos.length}');
       return estudiantesInscritos;
-      
     } catch (e) {
       print('❌ Error obteniendo estudiantes reales: $e');
       return [];
@@ -276,7 +277,6 @@ Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
     return estudiantes.length;
   }
 
-
   // ✅ MÉTODO PARA MOSTRAR ESTUDIANTES REALES (reemplaza el existente)
   void mostrarEstudiantesReales(CursoDomain curso) async {
     try {
@@ -287,10 +287,10 @@ Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
       );
 
       final estudiantesReales = await getEstudiantesReales(curso.id!);
-      
+
       // Cerrar loading
       Get.back();
-      
+
       // Mostrar diálogo con estudiantes reales
       Get.dialog(
         AlertDialog(
@@ -323,18 +323,12 @@ Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
                       const SizedBox(height: 16),
                       Text(
                         'No hay estudiantes inscritos',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Comparte el código "${curso.codigoRegistro}" para que los estudiantes se inscriban',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -407,7 +401,6 @@ Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
           ],
         ),
       );
-      
     } catch (e) {
       Get.back(); // Cerrar loading si hay error
       Get.snackbar(
@@ -418,5 +411,4 @@ Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
       );
     }
   }
-  
 }

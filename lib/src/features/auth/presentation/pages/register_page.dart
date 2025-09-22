@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/login_controller.dart';
+import '../../../../../core/routes/app_routes.dart';
 import '../../domain/use_case/usuario_usecase.dart';
 
 class RegisterPage extends StatelessWidget {
@@ -44,7 +45,7 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
               onPressed: () {
-                Get.toNamed('/login');
+                Get.toNamed(AppRoutes.login);
               },
               child: const Text('Ingresa'),
             ),

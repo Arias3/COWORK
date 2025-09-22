@@ -6,6 +6,7 @@ import '../../domain/entities/equipo_entity.dart';
 import '../../domain/entities/tipo_asignacion.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../controllers/categoria_equipo_controller.dart';
+import '../../../activities/presentation/pages/activities_page.dart';
 
 class CategoriasEquiposPage extends StatelessWidget {
   final CursoDomain curso;
@@ -147,6 +148,10 @@ class CategoriasEquiposPage extends StatelessWidget {
                       value: 'equipos',
                       child: Text('Ver equipos'),
                     ),
+                    const PopupMenuItem(
+                      value: 'actividades',
+                      child: Text('Ver actividades'),
+                    ),
                     const PopupMenuItem(value: 'editar', child: Text('Editar')),
                     const PopupMenuItem(
                       value: 'eliminar',
@@ -192,6 +197,9 @@ class CategoriasEquiposPage extends StatelessWidget {
       case 'equipos':
         controller.selectCategoria(categoria);
         DefaultTabController.of(Get.context!).animateTo(1);
+        break;
+      case 'actividades':
+        Get.to(() => ActivityPage(categoria: categoria));
         break;
       case 'editar':
         controller.mostrarDialogoEditarCategoria(categoria);

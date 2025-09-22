@@ -5,6 +5,7 @@ import '../../../src/features/home/domain/entities/inscripcion_entity.dart';
 import '../../../src/features/categories/domain/entities/categoria_equipo_entity.dart';
 import '../../../src/features/categories/domain/entities/equipo_entity.dart';
 import '../../../src/features/categories/domain/entities/tipo_asignacion.dart';
+import '../../../src/features/activities/domain/entities/activity.dart';
 
 class HiveHelper {
   static const String usuariosBox = 'usuarios';
@@ -12,57 +13,65 @@ class HiveHelper {
   static const String inscripcionesBox = 'inscripciones';
   static const String categoriasEquipoBox = 'categorias_equipo';
   static const String equiposBox = 'equipos';
+  static const String activitiesBox = 'activities';
 
   // Boxes existentes
   static Box<Usuario>? _usuariosBox;
   static Box<CursoDomain>? _cursosBox;
   static Box<Inscripcion>? _inscripcionesBox;
-  
+
   // Nuevos boxes
   static Box<CategoriaEquipo>? _categoriasEquipoBox;
   static Box<Equipo>? _equiposBox;
+  static Box<Activity>? _activitiesBox;
 
   // Getters para boxes existentes
   static Box<Usuario> get usuariosBoxInstance => _usuariosBox!;
   static Box<CursoDomain> get cursosBoxInstance => _cursosBox!;
   static Box<Inscripcion> get inscripcionesBoxInstance => _inscripcionesBox!;
-  
+
   // Getters para nuevos boxes
-  static Box<CategoriaEquipo> get categoriasEquipoBoxInstance => _categoriasEquipoBox!;
+  static Box<CategoriaEquipo> get categoriasEquipoBoxInstance =>
+      _categoriasEquipoBox!;
   static Box<Equipo> get equiposBoxInstance => _equiposBox!;
+  static Box<Activity> get activitiesBoxInstance => _activitiesBox!;
 
   static Future<void> initHive() async {
     await Hive.initFlutter();
-    
+
     // Registrar adaptadores existentes
     Hive.registerAdapter(UsuarioAdapter());
     Hive.registerAdapter(CursoDomainAdapter());
     Hive.registerAdapter(InscripcionAdapter());
-    
+
     // Registrar nuevos adaptadores
     Hive.registerAdapter(CategoriaEquipoAdapter());
     Hive.registerAdapter(EquipoAdapter());
     Hive.registerAdapter(TipoAsignacionAdapter());
+    Hive.registerAdapter(ActivityAdapter());
 
     // Abrir boxes existentes
     _usuariosBox = await Hive.openBox<Usuario>(usuariosBox);
     _cursosBox = await Hive.openBox<CursoDomain>(cursosBox);
     _inscripcionesBox = await Hive.openBox<Inscripcion>(inscripcionesBox);
-    
+
     // Abrir nuevos boxes
-    _categoriasEquipoBox = await Hive.openBox<CategoriaEquipo>(categoriasEquipoBox);
+    _categoriasEquipoBox = await Hive.openBox<CategoriaEquipo>(
+      categoriasEquipoBox,
+    );
     _equiposBox = await Hive.openBox<Equipo>(equiposBox);
+    _activitiesBox = await Hive.openBox<Activity>(activitiesBox);
 
     // Cargar datos iniciales si no existen
     await _loadInitialData();
   }
 
   static Future<void> _loadInitialData() async {
+    // Obtener instancias para usar en _loadInitialData
     final usuariosBoxInstance = _usuariosBox!;
     final cursosBoxInstance = _cursosBox!;
     final inscripcionesBoxInstance = _inscripcionesBox!;
     final categoriasEquipoBoxInstance = _categoriasEquipoBox!;
-    final equiposBoxInstance = _equiposBox!;
 
     // Solo cargar datos si las cajas están vacías
     if (usuariosBoxInstance.isEmpty) {
@@ -201,6 +210,45 @@ class HiveHelper {
       for (var categoria in categorias) {
         await categoriasEquipoBoxInstance.put(categoria.id, categoria);
         await categoriasEquipoBoxInstance.flush();
+      }
+    }
+
+    // Cargar datos de prueba para actividades
+    if (activitiesBoxInstance.isEmpty) {
+      final activities = [
+        Activity(
+          id: '1',
+          name: 'Diseño de la Interfaz',
+          description: 'Crear mockups y prototipos de la aplicación',
+          categoryId: 1, // Proyecto Final
+          deliveryDate: DateTime.now().add(Duration(days: 7)),
+        ),
+        Activity(
+          id: '2',
+          name: 'Implementación del Backend',
+          description: 'Desarrollar las APIs necesarias para la aplicación',
+          categoryId: 1, // Proyecto Final
+          deliveryDate: DateTime.now().add(Duration(days: 14)),
+        ),
+        Activity(
+          id: '3',
+          name: 'Ejercicio de Widgets',
+          description: 'Práctica con widgets básicos de Flutter',
+          categoryId: 2, // Laboratorio 1
+          deliveryDate: DateTime.now().subtract(Duration(days: 2)),
+        ),
+        Activity(
+          id: '4',
+          name: 'Navegación entre Pantallas',
+          description: 'Implementar navegación usando GetX',
+          categoryId: 2, // Laboratorio 1
+          deliveryDate: DateTime.now().add(Duration(days: 3)),
+        ),
+      ];
+
+      for (var activity in activities) {
+        await activitiesBoxInstance.put(activity.id, activity);
+        await activitiesBoxInstance.flush();
       }
     }
 

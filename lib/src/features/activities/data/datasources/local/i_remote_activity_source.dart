@@ -1,4 +1,4 @@
-import '../../../../activities/domain/models/activity.dart';
+import '../../../domain/entities/activity.dart';
 
 abstract class IActivitySource {
   Future<List<Activity>> getActivitys();

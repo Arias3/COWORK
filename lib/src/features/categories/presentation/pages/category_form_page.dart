@@ -7,12 +7,14 @@ import '../../domain/entities/category.dart';
 import '../../../activities/presentation/pages/activityFormPage.dart';
 import '../../../home/domain/entities/curso_entity.dart';
 import '../../domain/entities/metodo_agrupacion.dart';
+import '../../../../../core/routes/app_routes.dart';
 
 class CategoryFormPage extends StatefulWidget {
   final Category? category;
   final CursoDomain? curso;
 
-  const CategoryFormPage({Key? key, this.curso, this.category}) : super(key: key);
+  const CategoryFormPage({Key? key, this.curso, this.category})
+    : super(key: key);
 
   @override
   State<CategoryFormPage> createState() => _CategoryFormPageState();
@@ -115,8 +117,10 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? 'Editar Categoría' : 'Nueva Categoría',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          isEdit ? 'Editar Categoría' : 'Nueva Categoría',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 4,
       ),
       body: Padding(
@@ -127,7 +131,8 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
             children: [
               Card(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 3,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: Padding(
@@ -147,10 +152,12 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
                       DropdownButtonFormField<MetodoAgrupacion>(
                         value: _selectedMethod,
                         items: MetodoAgrupacion.values
-                            .map((m) => DropdownMenuItem(
-                                  value: m,
-                                  child: Text(m.name),
-                                ))
+                            .map(
+                              (m) => DropdownMenuItem(
+                                value: m,
+                                child: Text(m.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => _selectedMethod = v),
                         decoration: const InputDecoration(
@@ -187,12 +194,18 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
                 onPressed: _saveCategory,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                icon: Icon(isEdit ? Icons.save : Icons.check, color: Colors.white),
+                icon: Icon(
+                  isEdit ? Icons.save : Icons.check,
+                  color: Colors.white,
+                ),
                 label: Text(
                   isEdit ? 'Guardar cambios' : 'Crear categoría',
                   style: const TextStyle(color: Colors.white, fontSize: 16),
@@ -201,8 +214,10 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
               const SizedBox(height: 20),
               if (isEdit) ...[
                 const Divider(),
-                Text('Actividades',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Actividades',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Obx(() {
                   final activities = activityController.activities
@@ -215,7 +230,8 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
                     children: activities.map((act) {
                       return Card(
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         elevation: 2,
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         child: ListTile(
@@ -223,15 +239,19 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
                             backgroundColor: Colors.blueAccent,
                             child: Icon(Icons.assignment, color: Colors.white),
                           ),
-                          title: Text(act.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(
+                            act.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           subtitle: Text(act.description),
                           onTap: () {
-                            Get.toNamed('/addactivity', arguments: {
-                              'categoryId': widget.category!.id,
-                              'activity': act
-                            });
+                            Get.toNamed(
+                              AppRoutes.addActivity,
+                              arguments: {
+                                'categoryId': widget.category!.id,
+                                'activity': act,
+                              },
+                            );
                           },
                         ),
                       );
@@ -249,18 +269,21 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
               child: FloatingActionButton(
                 backgroundColor: Colors.blueAccent,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
                     shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
                     ),
                     builder: (_) => Padding(
                       padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom),
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ),
                       child: ActivityFormPage(categoryId: widget.category!.id!),
                     ),
                   ).then((_) => activityController.getActivities());

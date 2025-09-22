@@ -1,4 +1,4 @@
-import '../../../activities/domain/models/activity.dart';
+import '../../domain/entities/activity.dart';
 import '../../domain/repositories/i_activity_repository.dart';
 
 class LocalActivityRepository implements IActivityRepository {

@@ -1,4 +1,4 @@
-import '../../../../activities/domain/models/activity.dart';
+import '../../../domain/entities/activity.dart';
 import 'i_remote_activity_source.dart';
 
 class LocalActivitySource implements IActivitySource {
