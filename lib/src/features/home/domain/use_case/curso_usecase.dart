@@ -14,8 +14,22 @@ class CursoUseCase {
   Future<List<CursoDomain>> getCursosPorProfesor(int profesorId) =>
       _cursoRepository.getCursosPorProfesor(profesorId);
     
-  Future<List<CursoDomain>> getCursosInscritos(int usuarioId) =>
-      _cursoRepository.getCursosInscritos(usuarioId);
+  Future<List<CursoDomain>> getCursosInscritos(int usuarioId) async {
+  final inscripciones = await _inscripcionRepository.getInscripcionesPorUsuario(usuarioId);
+
+  final cursos = <CursoDomain>[];
+  for (final inscripcion in inscripciones) {
+    final curso = await getCursoById(inscripcion.cursoId);
+    if (curso != null) {
+      cursos.add(curso);
+    } else {
+      print('⚠️ No se encontró curso para ID ${inscripcion.cursoId}');
+    }
+  }
+  return cursos;
+}
+
+
 
   Future<CursoDomain?> getCursoById(int id) => _cursoRepository.getCursoById(id);
   
