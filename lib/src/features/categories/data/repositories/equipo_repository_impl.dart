@@ -18,24 +18,24 @@ class EquipoRepositoryImpl implements EquipoRepository {
   @override
   Future<Equipo?> getEquipoPorEstudiante(int estudianteId, int categoriaId) async {
     final box = HiveHelper.equiposBoxInstance;
-    try {
-      return box.values.firstWhere(
-        (equipo) => equipo.categoriaId == categoriaId && 
-                   equipo.estudiantesIds.contains(estudianteId)
-      );
-    } catch (e) {
-      return null;
+    final equipos = box.values.where((equipo) => equipo.categoriaId == categoriaId);
+    
+    for (final equipo in equipos) {
+      if (equipo.estudiantesIds.contains(estudianteId)) {
+        return equipo;
+      }
     }
+    return null;
   }
 
   @override
-  Future<int> createEquipo(Equipo equipo) async {
+  Future<String> createEquipo(Equipo equipo) async {
     final box = HiveHelper.equiposBoxInstance;
     final id = box.length + 1;
     equipo.id = id;
     await box.put(id, equipo);
     await box.flush();
-    return id;
+    return id.toString(); // CAMBIO: Retornar String
   }
 
   @override
@@ -64,5 +64,16 @@ class EquipoRepositoryImpl implements EquipoRepository {
       await box.delete(equipoId);
     }
     await box.flush();
+  }
+
+  @override
+  Future<Equipo?> getEquipoByStringId(String equipoId) async {
+    try {
+      final id = int.parse(equipoId);
+      return await getEquipoById(id);
+    } catch (e) {
+      print('Error parsing equipoId: $e');
+      return null;
+    }
   }
 }

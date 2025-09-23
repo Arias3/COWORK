@@ -4,7 +4,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/roble_auth_refresh_token_datasource.dart';
 import '../../data/datasources/roble_auth_logout_datasource.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/usuario_repository.dart';
+import '../../../../../core/data/database/roble_config.dart';
+import '../../../../../core/di/dependency_injection.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+
+// Extensión para firstWhereOrNull si no está disponible
+extension IterableExtension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (T element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
 
 class RobleAuthLoginController extends GetxController {
   final RobleAuthLoginUseCase useCase;
@@ -25,7 +39,6 @@ class RobleAuthLoginController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Inicia el timer para refrescar el token cada 10 minutos
     _refreshTimer = Timer.periodic(const Duration(minutes: 10), (timer) async {
       await refreshAccessTokenIfNeeded();
     });
@@ -49,34 +62,213 @@ class RobleAuthLoginController extends GetxController {
       accessToken.value = result['accessToken'] ?? '';
       refreshToken.value = result['refreshToken'] ?? '';
 
-      // Siempre guardar tokens
+      // Configurar token único para tu proyecto
+      RobleConfig.setAccessToken(accessToken.value);
+
+      // Activar Roble directamente (tablas ya creadas manualmente)
+      if (accessToken.value.isNotEmpty && !RobleConfig.useRoble) {
+        RobleConfig.useRoble = true;
+        print('✅ Roble activado - usando tablas existentes');
+      }
+
+      // Guardar tokens
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('accessToken', accessToken.value);
       await prefs.setString('refreshToken', refreshToken.value);
 
-      // Solo guardar credenciales si "Recuérdame" está activo
+      // Guardar credenciales si es necesario
       if (rememberMe) {
         await saveCredentials(email, password);
       } else {
-        // Limpiar credenciales guardadas si "Recuérdame" no está activo
         await prefs.remove('savedEmail');
         await prefs.remove('savedPassword');
       }
 
-      // Guardar información del usuario
+      // Procesar información del usuario
       if (result['user'] != null) {
         final userData = result['user'] as Map<String, dynamic>;
-        currentUser.value = Usuario(
-          id: userData['id']?.hashCode ?? 0, // Convertir string ID a int
-          nombre: userData['name'] ?? '',
-          email: userData['email'] ?? '',
-          password: '', // No almacenar contraseña para RobleAuth
-          rol: userData['role'] ?? 'user',
-        );
+        final authUserId = userData['id'].toString();
+        final emailNormalizado = email.toLowerCase().trim();
+        
+        final userRepo = Get.find<UsuarioRepository>();
+        Usuario? perfil;
+        
+        print('🔍 === BÚSQUEDA Y REPARACIÓN DE USUARIO ===');
+        print('Email: $emailNormalizado');
+        print('AuthUserId: $authUserId');
+        
+        try {
+          // 1. Buscar por email
+          perfil = await userRepo.getUsuarioByEmail(emailNormalizado);
+          print('🔍 Búsqueda por email: ${perfil != null ? 'ENCONTRADO' : 'NO ENCONTRADO'}');
+          
+          if (perfil != null) {
+            print('📋 Usuario encontrado - ID actual: ${perfil.id}, Rol: ${perfil.rol}');
+            
+            // REPARAR DATOS SI ES NECESARIO
+            bool necesitaReparacion = false;
+            
+            // Reparar ID si es null o 0
+            if (perfil.id == null || perfil.id! <= 0) {
+              print('🔧 REPARANDO: Usuario sin ID válido');
+              
+              if (perfil.robleId != null && perfil.robleId!.isNotEmpty) {
+                // Regenerar ID basado en robleId existente
+                final nuevoId = perfil.robleId!.hashCode.abs();
+                perfil.id = nuevoId == 0 ? 1 : nuevoId;
+              } else {
+                // Generar nuevo ID y buscar el robleId en Roble
+                final nuevoId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
+                perfil.id = nuevoId == 0 ? 1 : nuevoId;
+              }
+              
+              necesitaReparacion = true;
+              print('🆔 Nuevo ID asignado: ${perfil.id}');
+            }
+            
+            // Reparar authUserId
+            if (perfil.authUserId != authUserId) {
+              perfil.authUserId = authUserId;
+              necesitaReparacion = true;
+              print('🔧 REPARANDO: AuthUserId actualizado');
+            }
+            
+            // Reparar nombre
+            final nuevoNombre = userData['name'] ?? '';
+            if (nuevoNombre.isNotEmpty && perfil.nombre != nuevoNombre) {
+              perfil.nombre = nuevoNombre;
+              necesitaReparacion = true;
+              print('🔧 REPARANDO: Nombre actualizado a "$nuevoNombre"');
+            }
+            
+            // Reparar rol - Mantener rol existente si es profesor, sino mapear del auth
+            final rolAuth = userData['role'] ?? 'user';
+            final rolMapeado = _mapRoleToLocal(rolAuth);
+            
+            if (perfil.rol != 'profesor' && (rolMapeado == 'profesor' || rolAuth.toLowerCase() == 'teacher')) {
+              perfil.rol = 'profesor';
+              necesitaReparacion = true;
+              print('🔧 REPARANDO: Rol actualizado a profesor');
+            } else if (perfil.rol == 'estudiante' && rolAuth.toLowerCase() == 'teacher') {
+              perfil.rol = 'profesor';
+              necesitaReparacion = true;
+              print('🔧 REPARANDO: Estudiante promovido a profesor por auth');
+            }
+            
+            // Guardar reparaciones
+            if (necesitaReparacion) {
+              try {
+                print('💾 Guardando reparaciones en BD...');
+                await userRepo.updateUsuario(perfil);
+                print('✅ Usuario actualizado correctamente');
+              } catch (e) {
+                print('⚠️ Error guardando reparaciones: $e');
+                // Continuar con usuario reparado en memoria
+              }
+            }
+            
+            currentUser.value = perfil;
+            print('✅ Login completado - Usuario: ${perfil.nombre} (ID: ${perfil.id}, Rol: ${perfil.rol})');
+            
+          } else {
+            // 2. Si no existe por email, buscar por authUserId
+            print('🔍 No encontrado por email, buscando por authUserId...');
+            
+            try {
+              perfil = await userRepo.getUsuarioByAuthId(authUserId);
+              
+              if (perfil != null) {
+                print('✅ Encontrado por authUserId con ID: ${perfil.id}');
+                currentUser.value = perfil;
+              } else {
+                // 3. Usuario no existe, crear nuevo
+                print('🆕 Usuario no existe, creando nuevo...');
+                
+                final rolMapeado = _mapRoleToLocal(userData['role'] ?? 'user');
+                print('👤 Creando usuario con rol: $rolMapeado');
+                
+                final nuevoUsuario = Usuario(
+                  nombre: userData['name'] ?? 'Usuario',
+                  email: emailNormalizado,
+                  password: '',
+                  rol: rolMapeado,
+                  authUserId: authUserId,
+                );
+                
+                try {
+                  final nuevoId = await userRepo.createUsuario(nuevoUsuario);
+                  
+                  if (nuevoId != null && nuevoId > 0) {
+                    print('✅ Usuario creado con ID: $nuevoId');
+                    
+                    Get.snackbar(
+                      rolMapeado == 'profesor' ? 'Profesor Registrado' : 'Usuario Creado',
+                      'Bienvenido ${nuevoUsuario.nombre}',
+                      backgroundColor: Get.theme.colorScheme.primary,
+                      colorText: Get.theme.colorScheme.onPrimary,
+                      snackPosition: SnackPosition.TOP,
+                    );
+                  } else {
+                    // ID inválido, usar temporal
+                    final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
+                    nuevoUsuario.id = tempId == 0 ? 1 : tempId;
+                    print('🔧 Usando ID temporal: ${nuevoUsuario.id}');
+                    
+                    Get.snackbar(
+                      'Usuario Temporal',
+                      'Perfil creado temporalmente',
+                      backgroundColor: Get.theme.colorScheme.secondary,
+                      colorText: Get.theme.colorScheme.onSecondary,
+                      snackPosition: SnackPosition.TOP,
+                    );
+                  }
+                  
+                  currentUser.value = nuevoUsuario;
+                  
+                } catch (e) {
+                  print('❌ Error creando usuario: $e');
+                  
+                  // Crear usuario temporal en memoria
+                  final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
+                  nuevoUsuario.id = tempId == 0 ? 1 : tempId;
+                  currentUser.value = nuevoUsuario;
+                  
+                  Get.snackbar(
+                    'Usuario Temporal',
+                    'Perfil temporal creado. ID: ${nuevoUsuario.id}',
+                    backgroundColor: Colors.orange,
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.TOP,
+                  );
+                }
+              }
+            } catch (e) {
+              print('❌ Error en búsqueda por authUserId: $e');
+            }
+          }
+          
+        } catch (e) {
+          print('❌ Error general en procesamiento de usuario: $e');
+          
+          // Crear usuario de emergencia
+          final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
+          final usuarioEmergencia = Usuario(
+            id: tempId == 0 ? 1 : tempId,
+            nombre: userData['name'] ?? 'Usuario',
+            email: emailNormalizado,
+            password: '',
+            rol: _mapRoleToLocal(userData['role'] ?? 'user'),
+            authUserId: authUserId,
+          );
+          
+          currentUser.value = usuarioEmergencia;
+          print('🚨 Usuario de emergencia creado con ID: ${usuarioEmergencia.id}');
+        }
       }
 
       return accessToken.value.isNotEmpty;
     } catch (e) {
+      print('❌ Error en login: $e');
       errorMessage.value = e.toString();
       return false;
     } finally {
@@ -84,7 +276,6 @@ class RobleAuthLoginController extends GetxController {
     }
   }
 
-  /// Refresca el accessToken globalmente usando el refreshToken almacenado
   Future<bool> refreshAccessTokenIfNeeded() async {
     final prefs = await SharedPreferences.getInstance();
     final storedRefreshToken = prefs.getString('refreshToken') ?? '';
@@ -94,11 +285,14 @@ class RobleAuthLoginController extends GetxController {
         refreshToken: storedRefreshToken,
       );
       accessToken.value = newAccessToken;
+      
+      // Actualizar token
+      RobleConfig.setAccessToken(newAccessToken);
+      
       await prefs.setString('accessToken', newAccessToken);
       return true;
     } catch (e) {
       errorMessage.value = 'Error al refrescar token: $e';
-      // Mostrar mensaje y redirigir al login
       Get.snackbar(
         'Sesión expirada',
         'Por seguridad, vuelve a iniciar sesión.',
@@ -106,10 +300,8 @@ class RobleAuthLoginController extends GetxController {
         colorText: Get.theme.colorScheme.onError,
         snackPosition: SnackPosition.TOP,
       );
-      // Limpiar tokens
       await prefs.remove('accessToken');
       await prefs.remove('refreshToken');
-      // Redirigir al login
       Future.delayed(const Duration(seconds: 2), () {
         Get.offAllNamed('/login');
       });
@@ -117,31 +309,33 @@ class RobleAuthLoginController extends GetxController {
     }
   }
 
-  /// Realiza logout en el backend y limpia los tokens locales
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken') ?? '';
     try {
       await logoutDatasource.logout(accessToken: token);
     } catch (e) {
-      // Si falla, igual se limpian los tokens y se redirige
       print('Error en logout: $e');
     }
+    
+    // Limpiar configuración de Roble
+    RobleConfig.clearTokens();
+    RobleConfig.useRoble = false;
+    
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
     accessToken.value = '';
     refreshToken.value = '';
+    currentUser.value = null; // Limpiar usuario actual
     Get.offAllNamed('/login');
   }
 
-  /// Guarda credenciales de usuario si el usuario selecciona 'Recordarme'
   Future<void> saveCredentials(String email, String password) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('savedEmail', email);
     await prefs.setString('savedPassword', password);
   }
 
-  /// Recupera credenciales guardadas para autologin o precarga de formulario
   Future<Map<String, String>> getSavedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -150,22 +344,32 @@ class RobleAuthLoginController extends GetxController {
     };
   }
 
-  /// Guarda el accessToken y refreshToken localmente
   Future<void> saveTokens(String accessToken, String refreshToken) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('accessToken', accessToken);
     await prefs.setString('refreshToken', refreshToken);
   }
 
-  /// Recupera el accessToken guardado
   Future<String> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('accessToken') ?? '';
   }
 
-  /// Recupera el refreshToken guardado
   Future<String> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('refreshToken') ?? '';
+  }
+
+  String _mapRoleToLocal(String authRole) {
+    switch (authRole.toLowerCase()) {
+      case 'teacher':
+      case 'instructor':
+      case 'professor':
+        return 'profesor';
+      case 'student':
+      case 'user':
+      default:
+        return 'estudiante';
+    }
   }
 }

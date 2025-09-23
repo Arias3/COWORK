@@ -1,73 +1,90 @@
-import '../../features/home/domain/entities/curso_entity.dart';
+import '../../domain/entities/curso_entity.dart';
 
 class RobleCursoDto {
   final int? id;
   final String nombre;
   final String descripcion;
-  final int profesorId;
   final String codigoRegistro;
+  final int profesorId; // ✅ Cambiado a required int
   final String creadoEn;
   final List<String> categorias;
-  final String imagen;
+  final String? imagen;
   final List<String> estudiantesNombres;
 
   RobleCursoDto({
     this.id,
     required this.nombre,
     required this.descripcion,
-    required this.profesorId,
     required this.codigoRegistro,
+    required this.profesorId, // ✅ Sin nullable
     required this.creadoEn,
     required this.categorias,
-    required this.imagen,
+    this.imagen,
     required this.estudiantesNombres,
   });
 
-  Map<String, dynamic> toJson() => {
-    if (id != null) 'id': id,
-    'nombre': nombre,
-    'descripcion': descripcion,
-    'profesor_id': profesorId,
-    'codigo_registro': codigoRegistro,
-    'creado_en': creadoEn,
-    'categorias': categorias.join(','),
-    'imagen': imagen,
-    'estudiantes_nombres': estudiantesNombres.join(','),
-  };
+  factory RobleCursoDto.fromJson(Map<String, dynamic> json) {
+    return RobleCursoDto(
+      id: json['id'],
+      nombre: json['nombre'] ?? '',
+      descripcion: json['descripcion'] ?? '',
+      codigoRegistro: json['codigo_registro'] ?? '',
+      profesorId: json['profesor_id'] ?? 0,
+      creadoEn: json['creado_en'] ?? DateTime.now().toIso8601String(),
+      categorias: json['categorias'] != null 
+          ? (json['categorias'] is String 
+              ? (json['categorias'] as String).split(',').where((s) => s.isNotEmpty).toList()
+              : List<String>.from(json['categorias']))
+          : [],
+      imagen: json['imagen'],
+      estudiantesNombres: json['estudiantes_nombres'] != null 
+          ? (json['estudiantes_nombres'] is String 
+              ? (json['estudiantes_nombres'] as String).split(',').where((s) => s.isNotEmpty).toList()
+              : List<String>.from(json['estudiantes_nombres']))
+          : [],
+    );
+  }
 
-  factory RobleCursoDto.fromJson(Map<String, dynamic> json) => RobleCursoDto(
-    id: json['id'],
-    nombre: json['nombre'],
-    descripcion: json['descripcion'],
-    profesorId: json['profesor_id'],
-    codigoRegistro: json['codigo_registro'],
-    creadoEn: json['creado_en'],
-    categorias: (json['categorias'] as String?)?.split(',') ?? [],
-    imagen: json['imagen'] ?? '',
-    estudiantesNombres: (json['estudiantes_nombres'] as String?)?.split(',') ?? [],
-  );
+  factory RobleCursoDto.fromEntity(CursoDomain curso) {
+    return RobleCursoDto(
+      id: curso.id != 0 ? curso.id : null,
+      nombre: curso.nombre,
+      descripcion: curso.descripcion,
+      codigoRegistro: curso.codigoRegistro,
+      profesorId: curso.profesorId ?? 0, // ✅ Manejar null con valor por defecto
+      creadoEn: (curso.creadoEn ?? curso.fechaCreacion).toIso8601String(), // ✅ Usar fechaCreacion como fallback
+      categorias: curso.categorias,
+      imagen: curso.imagen,
+      estudiantesNombres: curso.estudiantesNombres,
+    );
+  }
 
-  factory RobleCursoDto.fromEntity(CursoDomain curso) => RobleCursoDto(
-    id: curso.id,
-    nombre: curso.nombre,
-    descripcion: curso.descripcion,
-    profesorId: curso.profesorId,
-    codigoRegistro: curso.codigoRegistro,
-    creadoEn: curso.creadoEn.toIso8601String(),
-    categorias: curso.categorias,
-    imagen: curso.imagen,
-    estudiantesNombres: curso.estudiantesNombres,
-  );
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'codigo_registro': codigoRegistro,
+      'profesor_id': profesorId,
+      'creado_en': creadoEn,
+      'categorias': categorias.join(','), // ✅ Convertir array a string separado por comas
+      'imagen': imagen,
+      'estudiantes_nombres': estudiantesNombres.join(','), // ✅ Convertir array a string separado por comas
+    };
+  }
 
-  CursoDomain toEntity() => CursoDomain(
-    id: id,
-    nombre: nombre,
-    descripcion: descripcion,
-    profesorId: profesorId,
-    codigoRegistro: codigoRegistro,
-    creadoEn: DateTime.parse(creadoEn),
-    categorias: categorias,
-    imagen: imagen,
-    estudiantesNombres: estudiantesNombres,
-  );
+  CursoDomain toEntity() {
+    return CursoDomain(
+      id: id ?? 0,
+      nombre: nombre,
+      descripcion: descripcion,
+      codigoRegistro: codigoRegistro,
+      profesorId: profesorId,
+      creadoEn: DateTime.parse(creadoEn), // ✅ Usar creadoEn aquí
+      categorias: categorias,
+      imagen: imagen,
+      estudiantesNombres: estudiantesNombres,
+      fechaCreacion: DateTime.parse(creadoEn), // ✅ Mismo valor para fechaCreacion
+    );
+  }
 }

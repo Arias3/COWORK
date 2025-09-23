@@ -9,4 +9,5 @@ abstract class UsuarioRepository {
   Future<void> deleteUsuario(int id);
   Future<bool> existeEmail(String email);
   Future<Usuario?> login(String email, String password);
+  Future<Usuario?> getUsuarioByAuthId(String authUserId);
 }

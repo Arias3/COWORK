@@ -399,15 +399,30 @@ class HomePage extends StatelessWidget {
   }
 
   Future<int> _getTotalEstudiantesReales(HomeController controller) async {
-    int total = 0;
-    for (var curso in controller.dictados) {
-      final numEstudiantes = await controller.getNumeroEstudiantesReales(
-        curso.id!,
-      );
+  int total = 0;
+  
+  print('📊 === CALCULANDO TOTAL ESTUDIANTES ===');
+  print('Cursos dictados: ${controller.dictados.length}');
+  
+  for (var curso in controller.dictados) {
+    print('🔍 Procesando curso: ${curso.nombre}');
+    print('  - ID: ${curso.id}');
+    print('  - Código: ${curso.codigoRegistro}');
+    
+    if (curso.id != null && curso.id! > 0) {
+      final numEstudiantes = await controller.getNumeroEstudiantesReales(curso.id!);
+      print('  - Estudiantes encontrados: $numEstudiantes');
       total += numEstudiantes;
+    } else {
+      print('  ❌ ID inválido, saltando curso');
     }
-    return total;
   }
+  
+  print('📈 Total estudiantes calculado: $total');
+  print('=== FIN CÁLCULO ===\n');
+  
+  return total;
+}
 
   Widget _buildStatCard({
     required String title,
@@ -925,24 +940,31 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             FutureBuilder<int>(
-                              future: isDictado
-                                  ? controller.getNumeroEstudiantesReales(
-                                      curso.id!,
-                                    )
-                                  : Future.value(
-                                      1,
-                                    ), // Para cursos inscritos, siempre hay al menos 1 (tú)
-                              builder: (context, snapshot) {
-                                return Text(
-                                  '${snapshot.data ?? '...'}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                );
-                              },
-                            ),
+  future: isDictado
+      ? () {
+          print('🔍 DEBUG CURSO CARD: ${curso.nombre}');
+          print('  - ID: ${curso.id}');
+          
+          if (curso.id == null || curso.id! <= 0) {
+            print('  ❌ ID inválido, retornando 0');
+            return Future.value(0);
+          }
+          
+          print('  ✅ ID válido, obteniendo estudiantes...');
+          return controller.getNumeroEstudiantesReales(curso.id!);
+        }()
+      : Future.value(1),
+  builder: (context, snapshot) {
+    return Text(
+      '${snapshot.data ?? '...'}',
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[600],
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  },
+)
                           ],
                         ),
                         // Categorías

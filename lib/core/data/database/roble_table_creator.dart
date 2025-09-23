@@ -1,3 +1,5 @@
+import '../datasources/roble_api_datasource.dart';
+
 class RobleTableCreator {
   final RobleApiDataSource _dataSource = RobleApiDataSource();
 
@@ -20,16 +22,17 @@ class RobleTableCreator {
   }
 
   Future<void> _createUsuariosTable() async {
-    print('📝 Creando tabla usuarios...');
-    await _dataSource.createTable('usuarios', [
-      {'name': 'id', 'type': 'integer', 'isPrimary': true},
-      {'name': 'nombre', 'type': 'varchar(255)', 'isNullable': false},
-      {'name': 'email', 'type': 'varchar(255)', 'isNullable': false},
-      {'name': 'password', 'type': 'varchar(255)', 'isNullable': false},
-      {'name': 'rol', 'type': 'varchar(50)', 'isNullable': false},
-      {'name': 'creado_en', 'type': 'timestamp', 'isNullable': false},
-    ]);
-  }
+  print('📝 Creando tabla usuarios...');
+  await _dataSource.createTable('usuarios', [
+    {'name': 'id', 'type': 'integer', 'isPrimary': true},
+    {'name': 'nombre', 'type': 'varchar(255)', 'isNullable': false},
+    {'name': 'email', 'type': 'varchar(255)', 'isNullable': false},
+    {'name': 'password', 'type': 'varchar(255)', 'isNullable': true}, // Nullable porque no guardamos password aquí
+    {'name': 'rol', 'type': 'varchar(50)', 'isNullable': false},
+    {'name': 'creado_en', 'type': 'timestamp', 'isNullable': false},
+    {'name': 'auth_user_id', 'type': 'varchar(255)', 'isNullable': true}, // 🆕 Referencia al usuario de auth
+  ]);
+}
 
   Future<void> _createCursosTable() async {
     print('📝 Creando tabla cursos...');

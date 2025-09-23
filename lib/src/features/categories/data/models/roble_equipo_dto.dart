@@ -1,13 +1,13 @@
 import '../../domain/entities/equipo_entity.dart';
 
 class RobleEquipoDto {
-  final int? id;
+  final String? id; // ✅ CAMBIO: String en lugar de int
   final String nombre;
   final int categoriaId;
   final List<int> estudiantesIds;
   final String creadoEn;
   final String? descripcion;
-  final String? color;
+  final String color;
 
   RobleEquipoDto({
     this.id,
@@ -16,46 +16,122 @@ class RobleEquipoDto {
     required this.estudiantesIds,
     required this.creadoEn,
     this.descripcion,
-    this.color,
+    required this.color,
   });
 
   Map<String, dynamic> toJson() => {
-    if (id != null) 'id': id,
-    'nombre': nombre,
-    'categoria_id': categoriaId,
-    'estudiantes_ids': estudiantesIds.join(','),
-    'creado_en': creadoEn,
-    'descripcion': descripcion,
-    'color': color,
-  };
+  'nombre': nombre,
+  'categoria_id': categoriaId,
+  'estudiantes_ids': estudiantesIds.isEmpty ? '' : estudiantesIds.join(','), // String vacío si está vacío
+  'creado_en': creadoEn,
+  'descripcion': descripcion,
+  'color': color,
+};
 
-  factory RobleEquipoDto.fromJson(Map<String, dynamic> json) => RobleEquipoDto(
-    id: json['id'],
-    nombre: json['nombre'],
-    categoriaId: json['categoria_id'],
-    estudiantesIds: (json['estudiantes_ids'] as String?)?.split(',').map<int>((e) => int.parse(e)).toList() ?? [],
-    creadoEn: json['creado_en'],
-    descripcion: json['descripcion'],
-    color: json['color'],
-  );
+  factory RobleEquipoDto.fromJson(Map<String, dynamic> json) {
+    try {
+      print('🔍 [EQUIPO DTO] Parseando equipo desde JSON: $json');
+      
+      // ✅ MANEJO SEGURO DEL ID
+      final rawId = json['_id'] ?? json['id'];
+      final idString = rawId?.toString();
+      
+      // ✅ MANEJO SEGURO DE CATEGORIA_ID
+      final rawCategoriaId = json['categoria_id'];
+      int categoriaId;
+      if (rawCategoriaId is int) {
+        categoriaId = rawCategoriaId;
+      } else if (rawCategoriaId is String) {
+        categoriaId = int.tryParse(rawCategoriaId) ?? 0;
+      } else {
+        categoriaId = 0;
+        print('⚠️ [EQUIPO DTO] categoria_id no válido: $rawCategoriaId');
+      }
+      
+      // ✅ MANEJO SEGURO DE ESTUDIANTES_IDS
+      List<int> estudiantesIds = [];
+      final rawEstudiantesIds = json['estudiantes_ids'];
+      if (rawEstudiantesIds is String && rawEstudiantesIds.isNotEmpty) {
+        try {
+          estudiantesIds = rawEstudiantesIds
+              .split(',')
+              .map((e) => int.tryParse(e.trim()) ?? 0)
+              .where((id) => id > 0)
+              .toList();
+        } catch (e) {
+          print('⚠️ [EQUIPO DTO] Error parseando estudiantes_ids: $e');
+          estudiantesIds = [];
+        }
+      }
+      
+      // ✅ MANEJO SEGURO DE FECHA
+      String creadoEn;
+      final rawFecha = json['creado_en'];
+      if (rawFecha is String && rawFecha.isNotEmpty) {
+        creadoEn = rawFecha;
+      } else {
+        creadoEn = DateTime.now().toIso8601String();
+        print('⚠️ [EQUIPO DTO] Fecha no válida, usando actual: $creadoEn');
+      }
+      
+      final dto = RobleEquipoDto(
+        id: idString,
+        nombre: json['nombre']?.toString() ?? '',
+        categoriaId: categoriaId,
+        estudiantesIds: estudiantesIds,
+        creadoEn: creadoEn,
+        descripcion: json['descripcion']?.toString(),
+        color: json['color']?.toString() ?? '#DDA0DD',
+      );
+      
+      print('✅ [EQUIPO DTO] Equipo parseado exitosamente: ${dto.nombre} (ID: ${dto.id})');
+      return dto;
+      
+    } catch (e) {
+      print('❌ [EQUIPO DTO] Error parseando equipo: $e');
+      print('❌ [EQUIPO DTO] JSON problemático: $json');
+      rethrow;
+    }
+  }
 
-  factory RobleEquipoDto.fromEntity(Equipo equipo) => RobleEquipoDto(
-    id: equipo.id,
-    nombre: equipo.nombre,
-    categoriaId: equipo.categoriaId,
-    estudiantesIds: equipo.estudiantesIds,
-    creadoEn: equipo.creadoEn.toIso8601String(),
-    descripcion: equipo.descripcion,
-    color: equipo.color,
-  );
+  factory RobleEquipoDto.fromEntity(Equipo equipo) {
+    return RobleEquipoDto(
+      id: equipo.id?.toString(), // Convertir int a string si existe
+      nombre: equipo.nombre,
+      categoriaId: equipo.categoriaId,
+      estudiantesIds: equipo.estudiantesIds,
+      creadoEn: equipo.creadoEn.toIso8601String(),
+      descripcion: equipo.descripcion,
+      color: equipo.color ?? '#DDA0DD', // ✅ FIX: Provide default value for nullable color
+    );
+  }
 
-  Equipo toEntity() => Equipo(
-    id: id,
-    nombre: nombre,
-    categoriaId: categoriaId,
-    estudiantesIds: estudiantesIds,
-    creadoEn: DateTime.parse(creadoEn),
-    descripcion: descripcion,
-    color: color,
-  );
+  Equipo toEntity() {
+    try {
+      // ✅ CONVERTIR STRING ID A INT (usando hashCode como en cursos)
+      int? entityId;
+      if (id != null && id!.isNotEmpty) {
+        final hashCode = id!.hashCode;
+        entityId = hashCode.abs() % 0x7FFFFFFF;
+        if (entityId == 0) entityId = 1;
+      }
+      
+      final entity = Equipo(
+        id: entityId,
+        nombre: nombre,
+        categoriaId: categoriaId,
+        estudiantesIds: estudiantesIds,
+        creadoEn: DateTime.tryParse(creadoEn) ?? DateTime.now(),
+        descripcion: descripcion,
+        color: color,
+      );
+      
+      print('✅ [EQUIPO DTO] Entidad creada: ${entity.nombre} (ID: ${entity.id})');
+      return entity;
+      
+    } catch (e) {
+      print('❌ [EQUIPO DTO] Error creando entidad: $e');
+      rethrow;
+    }
+  }
 }

@@ -7,6 +7,16 @@ import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../../../core/routes/app_routes.dart';
 
+// Extensión para firstWhereOrNull si no está disponible
+extension IterableExtension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (T element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   final CursoUseCase cursoUseCase;
   final RobleAuthLoginController authController;
@@ -232,14 +242,29 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     Get.toNamed(AppRoutes.categoriaEquipos, arguments: curso);
   }
 
+  // =============== MÉTODOS CORREGIDOS PARA ESTUDIANTES REALES ===============
+
   Future<List<Usuario>> getEstudiantesReales(int cursoId) async {
     try {
       print('🔍 Obteniendo estudiantes reales del curso $cursoId');
 
-      // 1. Obtener todas las inscripciones del curso
-      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(
-        cursoId,
-      );
+      // Verificar que el ID sea válido
+      if (cursoId == null || cursoId <= 0) {
+        print('❌ ID de curso inválido: $cursoId');
+        return [];
+      }
+
+      // 1. Verificar que el curso existe
+      final curso = await cursoUseCase.getCursoById(cursoId);
+      if (curso == null) {
+        print('❌ No se encontró curso con ID: $cursoId');
+        return [];
+      }
+
+      print('✅ Curso encontrado: ${curso.nombre} (Código: ${curso.codigoRegistro})');
+
+      // 2. Obtener inscripciones del curso usando el método que existe
+      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(cursoId);
       print('📋 Inscripciones encontradas: ${inscripciones.length}');
 
       if (inscripciones.isEmpty) {
@@ -247,27 +272,41 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         return [];
       }
 
-      // 2. Obtener todos los usuarios del sistema
+      // 3. Obtener todos los usuarios del sistema
       final todosUsuarios = await usuarioUseCase.getUsuarios();
+      print('👥 Total usuarios en sistema: ${todosUsuarios.length}');
 
-      // 3. Filtrar solo los usuarios que están inscritos en este curso
+      // 4. Filtrar solo los usuarios que están inscritos en este curso
       final estudiantesInscritos = <Usuario>[];
       for (var inscripcion in inscripciones) {
+        print('🔍 Buscando usuario con ID: ${inscripcion.usuarioId}');
+        
         final usuario = todosUsuarios.firstWhereOrNull(
           (u) => u.id == inscripcion.usuarioId,
         );
+        
         if (usuario != null) {
           estudiantesInscritos.add(usuario);
-          print(
-            '✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})',
-          );
+          print('✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})');
+        } else {
+          print('⚠️ Usuario con ID ${inscripcion.usuarioId} no encontrado en la lista de usuarios');
+          
+          // Debug: mostrar algunos usuarios para comparar IDs
+          if (todosUsuarios.isNotEmpty) {
+            print('📋 Primeros usuarios disponibles:');
+            for (int i = 0; i < todosUsuarios.length && i < 3; i++) {
+              final u = todosUsuarios[i];
+              print('  - ${u.nombre}: ID=${u.id}');
+            }
+          }
         }
       }
 
-      print('🎓 Total estudiantes reales: ${estudiantesInscritos.length}');
+      print('🎓 Total estudiantes reales encontrados: ${estudiantesInscritos.length}');
       return estudiantesInscritos;
     } catch (e) {
       print('❌ Error obteniendo estudiantes reales: $e');
+      print('Stack trace: ${StackTrace.current}');
       return [];
     }
   }
@@ -277,7 +316,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     return estudiantes.length;
   }
 
-  // ✅ MÉTODO PARA MOSTRAR ESTUDIANTES REALES (reemplaza el existente)
   void mostrarEstudiantesReales(CursoDomain curso) async {
     try {
       // Mostrar loading
