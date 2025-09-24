@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 // Import pages
 import '../../src/features/auth/presentation/pages/login_page.dart';
 import '../../src/features/auth/presentation/pages/register_page.dart';
+import '../../src/features/auth/presentation/pages/local_login_page.dart';
+import '../../src/features/auth/presentation/pages/local_register_page.dart';
 import '../../src/features/home/presentation/pages/home_page.dart';
 import '../../src/features/home/presentation/pages/new_course_page.dart';
 import '../../src/features/home/presentation/pages/enroll_course_page.dart';
@@ -30,6 +32,20 @@ class AppPages {
     GetPage(
       name: AppRoutes.register,
       page: () => const RegisterPage(),
+      transition: Transition.circularReveal,
+      transitionDuration: const Duration(milliseconds: 500),
+    ),
+
+    // Local Auth pages
+    GetPage(
+      name: AppRoutes.localLogin,
+      page: () => const LocalLoginPage(),
+      transition: Transition.circularReveal,
+      transitionDuration: const Duration(milliseconds: 500),
+    ),
+    GetPage(
+      name: AppRoutes.localRegister,
+      page: () => const LocalRegisterPage(),
       transition: Transition.circularReveal,
       transitionDuration: const Duration(milliseconds: 500),
     ),

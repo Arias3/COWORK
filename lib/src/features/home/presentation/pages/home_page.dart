@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../../domain/entities/curso_entity.dart';
 import './new_course_page.dart';
-import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
+import './estudiante_curso_detalle_page.dart';
+import '../../../auth/presentation/services/auth_service.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -32,14 +33,9 @@ class HomePage extends StatelessWidget {
               radius: 22,
               backgroundColor: Colors.blue.withOpacity(0.1),
               child: Text(
-                (controller.authController.currentUser.value != null &&
-                        controller
-                            .authController
-                            .currentUser
-                            .value!
-                            .nombre
-                            .isNotEmpty)
-                    ? controller.authController.currentUser.value!.nombre[0]
+                (controller.authService.currentUser != null &&
+                        controller.authService.currentUser!.nombre.isNotEmpty)
+                    ? controller.authService.currentUser!.nombre[0]
                           .toUpperCase()
                     : 'U',
                 style: const TextStyle(
@@ -63,8 +59,7 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    controller.authController.currentUser.value?.nombre ??
-                        'Usuario',
+                    controller.authService.currentUser?.nombre ?? 'Usuario',
                     style: const TextStyle(
                       fontSize: 18,
                       color: Colors.black,
@@ -106,10 +101,9 @@ class HomePage extends StatelessWidget {
                       controller.refreshData();
                       break;
                     case 'logout':
-                      final authController =
-                          Get.find<RobleAuthLoginController>();
-                      await authController.logout();
-                      Get.offAllNamed('/login');
+                      final authService = Get.find<AuthService>();
+                      await authService.logout();
+                      Get.offAllNamed('/local-login');
                       break;
                   }
                 },
@@ -197,10 +191,9 @@ class HomePage extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.logout, color: Colors.red),
                     onPressed: () async {
-                      final authController =
-                          Get.find<RobleAuthLoginController>();
-                      await authController.logout();
-                      Get.offAllNamed('/login');
+                      final authService = Get.find<AuthService>();
+                      await authService.logout();
+                      Get.offAllNamed('/local-login');
                     },
                     tooltip: 'Cerrar sesión',
                   ),
@@ -742,14 +735,12 @@ class HomePage extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (!isDictado) {
-          Get.snackbar(
-            'Información',
-            'Funcionalidad de detalles próximamente',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-          );
+          // Navegar a la página de detalles del curso para estudiantes
+          Get.to(() => EstudianteCursoDetallePage(curso: curso));
         }
       },
+      onLongPress: () =>
+          _mostrarMenuCurso(curso, controller, isEstudiante: !isDictado),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -925,13 +916,9 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             FutureBuilder<int>(
-                              future: isDictado
-                                  ? controller.getNumeroEstudiantesReales(
-                                      curso.id!,
-                                    )
-                                  : Future.value(
-                                      1,
-                                    ), // Para cursos inscritos, siempre hay al menos 1 (tú)
+                              future: controller.getNumeroEstudiantesReales(
+                                curso.id!,
+                              ),
                               builder: (context, snapshot) {
                                 return Text(
                                   '${snapshot.data ?? '...'}',
@@ -1021,7 +1008,11 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  void _mostrarMenuCurso(CursoDomain curso, HomeController controller) {
+  void _mostrarMenuCurso(
+    CursoDomain curso,
+    HomeController controller, {
+    bool isEstudiante = false,
+  }) {
     Get.bottomSheet(
       Container(
         decoration: const BoxDecoration(
@@ -1053,22 +1044,27 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    leading: const Icon(Icons.edit, color: Colors.blue),
-                    title: const Text('Editar Curso'),
-                    onTap: () {
-                      Get.back();
-                      Get.snackbar(
-                        'Información',
-                        'Funcionalidad de edición próximamente',
-                        backgroundColor: Colors.orange,
-                        colorText: Colors.white,
-                      );
-                    },
-                  ),
+                  if (!isEstudiante) ...[
+                    // Opciones para profesores
+                    ListTile(
+                      leading: const Icon(Icons.edit, color: Colors.blue),
+                      title: const Text('Editar Curso'),
+                      onTap: () {
+                        Get.back();
+                        Get.snackbar(
+                          'Información',
+                          'Funcionalidad de edición próximamente',
+                          backgroundColor: Colors.orange,
+                          colorText: Colors.white,
+                        );
+                      },
+                    ),
+                  ],
                   ListTile(
                     leading: const Icon(Icons.people, color: Colors.green),
-                    title: const Text('Ver Estudiantes'),
+                    title: Text(
+                      isEstudiante ? 'Ver Compañeros' : 'Ver Estudiantes',
+                    ),
                     subtitle: FutureBuilder<int>(
                       future: controller.getNumeroEstudiantesReales(curso.id!),
                       builder: (context, snapshot) {
@@ -1087,36 +1083,90 @@ class HomePage extends StatelessWidget {
                       _mostrarEstudiantes(curso);
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.share, color: Colors.purple),
-                    title: const Text('Compartir Código'),
-                    subtitle: Text('Código: ${curso.codigoRegistro}'),
-                    onTap: () {
-                      Get.back();
-                      Get.snackbar(
-                        'Código de Registro',
-                        'Código: ${curso.codigoRegistro}',
-                        backgroundColor: Colors.purple,
-                        colorText: Colors.white,
-                        duration: const Duration(seconds: 5),
-                      );
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.delete, color: Colors.red),
-                    title: const Text('Eliminar Curso'),
-                    onTap: () {
-                      Get.back();
-                      controller.eliminarCurso(curso);
-                    },
-                  ),
+                  if (!isEstudiante) ...[
+                    // Solo para profesores
+                    ListTile(
+                      leading: const Icon(Icons.share, color: Colors.purple),
+                      title: const Text('Compartir Código'),
+                      subtitle: Text('Código: ${curso.codigoRegistro}'),
+                      onTap: () {
+                        Get.back();
+                        Get.snackbar(
+                          'Código de Registro',
+                          'Código: ${curso.codigoRegistro}',
+                          backgroundColor: Colors.purple,
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 5),
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.delete, color: Colors.red),
+                      title: const Text('Eliminar Curso'),
+                      onTap: () {
+                        Get.back();
+                        controller.eliminarCurso(curso);
+                      },
+                    ),
+                  ] else ...[
+                    // Para estudiantes - opción de desinscribirse
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.exit_to_app,
+                        color: Colors.orange,
+                      ),
+                      title: const Text('Desinscribirse'),
+                      onTap: () {
+                        Get.back();
+                        _mostrarDialogoDesinscripcion(curso, controller);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 16),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _mostrarDialogoDesinscripcion(
+    CursoDomain curso,
+    HomeController controller,
+  ) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Confirmar'),
+        content: Text(
+          '¿Estás seguro de que quieres desinscribirte del curso "${curso.nombre}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              // Aquí iría la lógica para desinscribirse
+              Get.snackbar(
+                'Información',
+                'Funcionalidad de desinscripción próximamente',
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'Desinscribirse',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

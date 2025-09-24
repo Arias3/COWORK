@@ -2,6 +2,8 @@ class AppRoutes {
   // Auth routes
   static const String login = '/login';
   static const String register = '/register';
+  static const String localLogin = '/local-login';
+  static const String localRegister = '/local-register';
 
   // Home routes
   static const String home = '/home';

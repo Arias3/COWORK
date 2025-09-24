@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 import '../../domain/use_case/curso_usecase.dart';
-import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
+import '../../../auth/presentation/services/auth_service.dart';
 import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import './home_controller.dart';
@@ -10,14 +10,10 @@ import 'dart:math';
 
 class NewCourseController extends GetxController {
   final CursoUseCase cursoUseCase;
-  final RobleAuthLoginController authController;
+  final AuthService authService;
   final UsuarioUseCase usuarioUseCase;
 
-  NewCourseController(
-    this.cursoUseCase,
-    this.authController,
-    this.usuarioUseCase,
-  );
+  NewCourseController(this.cursoUseCase, this.authService, this.usuarioUseCase);
 
   // Variables existentes
   var nombreCurso = ''.obs;
@@ -68,6 +64,13 @@ class NewCourseController extends GetxController {
     });
   }
 
+  // Método para refrescar estudiantes (útil después de registros)
+  Future<void> refrescarEstudiantes() async {
+    print('🔄 Refrescando lista de estudiantes...');
+    print('📡 Incluyendo sincronización con RobleAuth...');
+    await cargarEstudiantes();
+  }
+
   // ========================================================================
   // MÉTODOS PARA CARGAR Y FILTRAR ESTUDIANTES (CON DEBUG)
   // ========================================================================
@@ -77,9 +80,22 @@ class NewCourseController extends GetxController {
       isLoadingStudents.value = true;
       print('🔄 Iniciando carga de estudiantes desde BD...');
 
-      // Obtener todos los usuarios del sistema (tu lógica existente)
+      // 🔥 SINCRONIZAR CON ROBLEAUTH PRIMERO para obtener usuarios actualizados
+      print('📡 Sincronizando con RobleAuth antes de cargar estudiantes...');
+      try {
+        // Sincronizar usuarios con la fuente de datos actual
+        await authService.sincronizarUsuarios();
+        print('✅ Sincronización con RobleAuth completada');
+      } catch (e) {
+        print('⚠️ Error en sincronización con RobleAuth: $e');
+        print('💡 Continuando con usuarios locales disponibles');
+      }
+
+      // Obtener todos los usuarios del sistema (ahora actualizados con RobleAuth)
       final usuarios = await usuarioUseCase.getUsuarios();
-      print('👥 Total usuarios obtenidos: ${usuarios.length}');
+      print(
+        '👥 Total usuarios obtenidos (después de sync): ${usuarios.length}',
+      );
 
       // Debug: mostrar primeros 3 usuarios para verificar datos
       if (usuarios.isNotEmpty) {
@@ -92,10 +108,22 @@ class NewCourseController extends GetxController {
         }
       }
 
-      // Filtrar solo estudiantes (excluir profesores)
-      todosLosEstudiantes.value = usuarios
-          .where((usuario) => usuario.rol == 'estudiante')
-          .toList();
+      // Filtrar solo estudiantes (excluir profesores Y al usuario actual)
+      // NOTA: RobleAuth usa "user", pero Hive usa "estudiante"
+      final currentUserId = authService.currentUser?.id;
+
+      todosLosEstudiantes.value = usuarios.where((usuario) {
+        // Debe ser estudiante
+        if (usuario.rol != 'estudiante' && usuario.rol != 'user') {
+          return false;
+        }
+        // NO debe ser el usuario actual (creador del curso)
+        if (currentUserId != null && usuario.id == currentUserId) {
+          print('🚫 Excluyendo al creador del curso: ${usuario.nombre}');
+          return false;
+        }
+        return true;
+      }).toList();
 
       print('🎓 Estudiantes filtrados: ${todosLosEstudiantes.length}');
 
@@ -113,6 +141,81 @@ class NewCourseController extends GetxController {
     } finally {
       isLoadingStudents.value = false;
       print('🏁 Carga finalizada. Loading: ${isLoadingStudents.value}');
+    }
+  }
+
+  /// Busca un estudiante por email en RobleAuth y lo agrega a la lista
+  Future<void> buscarEstudiantePorEmail(String email) async {
+    try {
+      if (email.trim().isEmpty) {
+        Get.snackbar(
+          'Error',
+          'Por favor ingresa un email válido',
+          backgroundColor: Colors.orange[100],
+          colorText: Colors.orange[800],
+          icon: const Icon(Icons.warning, color: Colors.orange),
+        );
+        return;
+      }
+
+      // Verificar si ya existe localmente
+      final emailLower = email.toLowerCase().trim();
+      final existeLocalmente = todosLosEstudiantes.any(
+        (u) => u.email.toLowerCase() == emailLower,
+      );
+
+      if (existeLocalmente) {
+        Get.snackbar(
+          'Usuario Existente',
+          'El usuario $email ya está disponible en la lista',
+          backgroundColor: Colors.blue[100],
+          colorText: Colors.blue[800],
+          icon: const Icon(Icons.info, color: Colors.blue),
+        );
+        return;
+      }
+
+      print('🔍 Buscando estudiante por email: $email');
+      isLoadingStudents.value = true;
+
+      // Buscar usuario usando el servicio de autenticación
+      final usuario = await authService.buscarUsuarioPorEmail(email);
+
+      if (usuario != null) {
+        print('✅ Usuario encontrado y sincronizado: ${usuario.nombre}');
+
+        // Recargar la lista completa
+        await cargarEstudiantes();
+
+        Get.snackbar(
+          'Usuario Agregado',
+          '${usuario.nombre} ha sido agregado a la lista de estudiantes disponibles',
+          backgroundColor: Colors.green[100],
+          colorText: Colors.green[800],
+          icon: const Icon(Icons.check_circle, color: Colors.green),
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        Get.snackbar(
+          'Usuario No Encontrado',
+          'No se encontró ningún usuario con el email $email en RobleAuth',
+          backgroundColor: Colors.red[100],
+          colorText: Colors.red[800],
+          icon: const Icon(Icons.error, color: Colors.red),
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      print('❌ Error buscando estudiante por email: $e');
+      Get.snackbar(
+        'Error',
+        'Error al buscar estudiante: ${e.toString()}',
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+        icon: const Icon(Icons.error, color: Colors.red),
+      );
+    } finally {
+      isLoadingStudents.value = false;
     }
   }
 
@@ -281,7 +384,7 @@ class NewCourseController extends GetxController {
     try {
       isLoading.value = true;
 
-      final userId = authController.currentUser.value?.id;
+      final userId = authService.currentUser?.id;
       if (userId == null) {
         Get.snackbar('Error', 'Usuario no autenticado');
         return false;

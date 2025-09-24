@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../activities/presentation/controllers/activity_controller.dart';
 import '../../../categories/domain/entities/categoria_equipo_entity.dart';
 import '../../../../../core/routes/app_routes.dart';
+import 'activity_assignment_page.dart';
+import '../../../evaluations/presentation/pages/evaluaciones_page.dart';
 
 class ActivityPage extends StatelessWidget {
   final CategoriaEquipo? categoria;
@@ -56,6 +58,79 @@ class ActivityPage extends StatelessWidget {
           ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          // 🔹 NUEVO: Menú de filtros
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            onSelected: (value) async {
+              switch (value) {
+                case 'all':
+                  if (categoria != null) {
+                    await activityController.getActivities(
+                      categoryId: categoria!.id,
+                    );
+                  } else {
+                    await activityController.getActivities();
+                  }
+                  break;
+                case 'unassigned':
+                  if (categoria != null) {
+                    await activityController.getActivities(
+                      categoryId: categoria!.id,
+                    );
+                  } else {
+                    await activityController.getActivities();
+                  }
+                  break;
+                case 'assigned':
+                  if (categoria != null) {
+                    await activityController.getActivities(
+                      categoryId: categoria!.id,
+                    );
+                  } else {
+                    await activityController.getActivities();
+                  }
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'all',
+                child: Row(
+                  children: [
+                    Icon(Icons.list, size: 20),
+                    SizedBox(width: 8),
+                    Text('Todas las actividades'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'unassigned',
+                child: Row(
+                  children: [
+                    Icon(Icons.pending_actions, size: 20, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Sin asignar', style: TextStyle(color: Colors.orange)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'assigned',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.assignment_turned_in,
+                      size: 20,
+                      color: Colors.green,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Asignadas', style: TextStyle(color: Colors.green)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Obx(() {
         final activitys = activityController.activities;
@@ -227,14 +302,43 @@ class ActivityPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          activity.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                activity.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Estado de asignación simplificado
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.5),
+                                ),
+                              ),
+                              child: Text(
+                                'ACTIVIDAD',
+                                style: TextStyle(
+                                  color: Colors.blue[100],
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 4),
                         if (daysRemaining >= 0)
                           Text(
                             daysRemaining == 0
@@ -268,36 +372,97 @@ class ActivityPage extends StatelessWidget {
                             arguments: [activity],
                           );
                           break;
+                        case 'assign':
+                          // Navegar a la página de asignación
+                          Get.to(
+                            () => ActivityAssignmentPage(activity: activity),
+                          );
+                          break;
+                        case 'evaluate':
+                          // Navegar a la página de evaluaciones
+                          Get.to(() => EvaluacionesPage(activity: activity));
+                          break;
                         case 'delete':
                           _showDeleteDialog(activity, activityController);
                           break;
                       }
                     },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
+                    itemBuilder: (context) {
+                      List<PopupMenuEntry<String>> items = [
+                        // Editar siempre disponible
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, size: 20),
+                              SizedBox(width: 8),
+                              Text('Editar'),
+                            ],
+                          ),
                         ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Eliminar',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
+                      ];
+
+                      // Siempre permitir asignar a equipos
+                      items.add(
+                        const PopupMenuItem(
+                          value: 'assign',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.group_add,
+                                size: 20,
+                                color: Colors.blue,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Asignar a equipos',
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      );
+
+                      // Siempre permitir evaluaciones
+                      items.add(
+                        const PopupMenuItem(
+                          value: 'evaluate',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.assessment,
+                                size: 20,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Evaluaciones',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+
+                      // Eliminar siempre disponible
+                      items.add(
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, size: 20, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text(
+                                'Eliminar',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+
+                      return items;
+                    },
                   ),
                 ],
               ),

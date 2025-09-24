@@ -13,7 +13,9 @@ import '../../src/features/home/data/repositories/inscripcion_repository_impl.da
 // Nuevos repositorios
 import '../../src/features/categories/data/repositories/categoria_equipo_repository_impl.dart';
 import '../../src/features/categories/data/repositories/equipo_repository_impl.dart';
+import '../../src/features/categories/data/repositories/equipo_actividad_repository_impl.dart';
 import '../../src/features/activities/data/datasources/local/hive_activity_repository.dart';
+import '../../src/features/evaluations/data/repositories/evaluacion_repository_impl.dart';
 
 // Interfaces de repositorios existentes
 import '../../src/features/auth/domain/repositories/usuario_repository.dart';
@@ -25,7 +27,9 @@ import '../../src/features/home/domain/repositories/inscripcion_repository.dart'
 // Nuevas interfaces de repositorios
 import '../../src/features/categories/domain/repositories/categoria_equipo_repository.dart';
 import '../../src/features/categories/domain/repositories/equipo_repository.dart';
+import '../../src/features/categories/domain/repositories/equipo_actividad_repository.dart';
 import '../../src/features/activities/domain/repositories/i_activity_repository.dart';
+import '../../src/features/evaluations/domain/repositories/i_evaluacion_repository.dart';
 
 // Casos de uso existentes
 import '../../src/features/auth/domain/use_case/usuario_usecase.dart';
@@ -36,18 +40,22 @@ import '../../src/features/home/domain/use_case/curso_usecase.dart';
 // Nuevo caso de uso
 import '../../src/features/categories/domain/usecases/categoria_equipo_usecase.dart';
 import '../../src/features/activities/domain/usecases/activity_usecase.dart';
+import '../../src/features/categories/domain/usecases/equipo_actividad_usecase.dart';
+import '../../src/features/evaluations/domain/usecases/evaluacion_usecase.dart';
 
 // Controladores existentes
 import '../../src/features/auth/presentation/controllers/roble_auth_login_controller.dart';
 import '../../src/features/auth/presentation/controllers/roble_auth_logout_controller.dart';
 import '../../src/features/auth/presentation/controllers/roble_auth_register_controller.dart';
+import '../../src/features/auth/presentation/controllers/local_auth_controller.dart';
+import '../../src/features/auth/presentation/services/auth_service.dart';
 import '../../src/features/home/presentation/controllers/home_controller.dart';
-import '../../src/features/home/presentation/controllers/enroll_course_controller.dart';
 import '../../src/features/home/presentation/controllers/new_course_controller.dart';
 
 // Nuevo controlador
 import '../../src/features/categories/presentation/controllers/categoria_equipo_controller.dart';
 import '../../src/features/activities/presentation/controllers/activity_controller.dart';
+import '../../src/features/evaluations/presentation/controllers/evaluacion_controller.dart';
 
 class DependencyInjection {
   static Future<void> init() async {
@@ -92,6 +100,13 @@ class DependencyInjection {
       permanent: true,
     );
     Get.put<EquipoRepository>(EquipoRepositoryImpl(), permanent: true);
+    Get.put<EquipoActividadRepository>(
+      EquipoActividadRepositoryImpl(),
+      permanent: true,
+    );
+
+    // Evaluations dependencies
+    Get.put<IEvaluacionRepository>(EvaluacionRepositoryImpl(), permanent: true);
 
     // ========================================================================
     // CASOS DE USO EXISTENTES
@@ -126,6 +141,21 @@ class DependencyInjection {
       permanent: true,
     );
 
+    Get.put<EquipoActividadUseCase>(
+      EquipoActividadUseCase(Get.find<EquipoActividadRepository>()),
+      permanent: true,
+    );
+
+    Get.put<EvaluacionUseCase>(
+      EvaluacionUseCase(
+        Get.find<IEvaluacionRepository>(),
+        Get.find<CategoriaEquipoUseCase>(),
+        Get.find<EquipoActividadUseCase>(),
+        Get.find<UsuarioRepository>(),
+      ),
+      permanent: true,
+    );
+
     // ========================================================================
     // NUEVOS CASOS DE USO DE AUTH
     // ========================================================================
@@ -156,29 +186,41 @@ class DependencyInjection {
       permanent: true,
     );
 
+    // Local Auth Controller (temporary implementation)
+    Get.put<LocalAuthController>(
+      LocalAuthController(Get.find<UsuarioUseCase>()),
+      permanent: true,
+    );
+
+    // Auth Service (unified authentication interface)
+    Get.put<AuthService>(AuthService(), permanent: true);
+
     // ========================================================================
     // RESTO DE CONTROLADORES
     // ========================================================================
     Get.lazyPut<HomeController>(
       () => HomeController(
         Get.find<CursoUseCase>(),
-        Get.find<RobleAuthLoginController>(), // Nuevo controlador de login
+        Get.find<AuthService>(), // Servicio unificado de autenticación
         Get.find<UsuarioUseCase>(),
       ),
       fenix: true,
     );
 
+    // TODO: Actualizar estos controladores para usar AuthService
+    /*
     Get.lazyPut<EnrollCourseController>(
       () => EnrollCourseController(
         Get.find<CursoUseCase>(),
         Get.find<RobleAuthLoginController>(), // Nuevo controlador de login
       ),
     );
+    */
 
     Get.lazyPut<NewCourseController>(
       () => NewCourseController(
         Get.find<CursoUseCase>(),
-        Get.find<RobleAuthLoginController>(), // Nuevo controlador de login
+        Get.find<AuthService>(), // Servicio unificado de autenticación
         Get.find<UsuarioUseCase>(),
       ),
       fenix: true,
@@ -187,13 +229,19 @@ class DependencyInjection {
     // ========================================================================
     // NUEVO CONTROLADOR
     // ========================================================================
+    // Controllers de categorías y equipos
     Get.put<CategoriaEquipoController>(
       CategoriaEquipoController(
         Get.find<CategoriaEquipoUseCase>(),
-        Get.find<RobleAuthLoginController>(), // Nuevo controlador de login
+        Get.find<AuthService>(), // Servicio unificado de autenticación
       ),
     );
 
-    Get.lazyPut<ActivityController>(() => ActivityController());
+    Get.put<ActivityController>(ActivityController(), permanent: true);
+
+    Get.put<EvaluacionController>(
+      EvaluacionController(Get.find<EvaluacionUseCase>()),
+      permanent: true,
+    );
   }
 }

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/use_case/curso_usecase.dart';
 import '../../domain/entities/curso_entity.dart';
-import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
+import '../../../auth/presentation/services/auth_service.dart';
 import '../../../auth/domain/use_case/usuario_usecase.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../../../core/routes/app_routes.dart';
 
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   final CursoUseCase cursoUseCase;
-  final RobleAuthLoginController authController;
+  final AuthService authService;
   final UsuarioUseCase usuarioUseCase;
 
-  HomeController(this.cursoUseCase, this.authController, this.usuarioUseCase);
+  HomeController(this.cursoUseCase, this.authService, this.usuarioUseCase);
 
   // Estados de UI
   var dictados = <CursoDomain>[].obs;
@@ -160,7 +160,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> inscribirseEnCurso(String codigoRegistro) async {
     try {
-      final userId = authController.currentUser.value?.id;
+      final userId = authService.currentUser?.id;
       if (userId == null) {
         Get.snackbar('Error', 'Usuario no autenticado');
         return;
@@ -198,7 +198,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       isLoadingDictados.value = true;
       isLoadingInscritos.value = true;
 
-      final userId = authController.currentUser.value?.id;
+      final userId = authService.currentUser?.id;
       if (userId == null) return;
 
       // Cargar cursos dictados por el usuario actual

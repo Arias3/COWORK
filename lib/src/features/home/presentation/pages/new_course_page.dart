@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/new_course_controller.dart';
+import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
 
 class NewCoursePage extends StatelessWidget {
   const NewCoursePage({super.key});
@@ -380,16 +381,133 @@ class NewCoursePage extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            // Botón de diagnóstico (temporal para debug)
+            // Botón para agregar por email
             TextButton.icon(
-              onPressed: controller.mostrarEstadisticas,
-              icon: const Icon(Icons.info_outline, size: 16),
-              label: const Text('Info', style: TextStyle(fontSize: 12)),
-              style: TextButton.styleFrom(foregroundColor: Colors.grey),
+              onPressed: () => _mostrarDialogoAgregarPorEmail(controller),
+              icon: const Icon(Icons.person_add, size: 16, color: Colors.green),
+              label: const Text(
+                'Agregar',
+                style: TextStyle(fontSize: 11, color: Colors.green),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              ),
             ),
+            // Botón de sincronización con RobleAuth
+            Obx(() => TextButton.icon(
+              onPressed: controller.isLoadingStudents.value
+                  ? null
+                  : () async {
+                      // Mostrar un diálogo de progreso
+                      Get.dialog(
+                        AlertDialog(
+                          title: const Text('Sincronizando con RobleAuth'),
+                          content: const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Verificando usuarios disponibles...'),
+                            ],
+                          ),
+                        ),
+                        barrierDismissible: false,
+                      );
+                      
+                      try {
+                        await Get.find<RobleAuthLoginController>()
+                            .sincronizarTodosLosUsuariosDeRobleAuth();
+                        
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        await controller.cargarEstudiantes();
+                        
+                        Get.back(); // Cerrar diálogo
+                        
+                        Get.snackbar(
+                          'Sincronización Exitosa',
+                          'Los usuarios se han actualizado desde RobleAuth',
+                          backgroundColor: Colors.green[100],
+                          colorText: Colors.green[800],
+                          icon: const Icon(Icons.check_circle, color: Colors.green),
+                        );
+                      } catch (e) {
+                        Get.back(); // Cerrar diálogo
+                        
+                        Get.snackbar(
+                          'Información',
+                          'Los usuarios se sincronizarán automáticamente al iniciar sesión',
+                          backgroundColor: Colors.blue[100],
+                          colorText: Colors.blue[800],
+                          icon: const Icon(Icons.info, color: Colors.blue),
+                          duration: const Duration(seconds: 4),
+                        );
+                      }
+                    },
+              icon: controller.isLoadingStudents.value
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        color: Colors.blue,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.sync, size: 16),
+              label: Text(
+                controller.isLoadingStudents.value 
+                    ? 'Sincronizando...' 
+                    : 'Sincronizar',
+                style: const TextStyle(fontSize: 11),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              ),
+            )),
           ],
         ),
         const SizedBox(height: 12),
+
+        // Widget informativo sobre sincronización
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue[200]!, width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sincronización automática habilitada',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Los usuarios se cargan desde RobleAuth automáticamente. Si no ves algún estudiante, usa "Sincronizar RobleAuth".',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Buscador mejorado
         _buildStudentSearch(controller),
@@ -614,8 +732,15 @@ class NewCoursePage extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Busca y selecciona estudiantes registrados',
+                'Sincroniza con RobleAuth y busca estudiantes registrados',
                 style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tip: Usa el botón "Sincronizar RobleAuth" para cargar todos los usuarios',
+                style: TextStyle(fontSize: 12, color: Colors.blue[400], fontStyle: FontStyle.italic),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -1144,6 +1269,102 @@ class NewCoursePage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _mostrarDialogoAgregarPorEmail(NewCourseController controller) {
+    final emailController = TextEditingController();
+    
+    Get.dialog(
+      AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.person_add, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Agregar Estudiante por Email'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ingresa el email del estudiante registrado en RobleAuth:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email del estudiante',
+                hintText: 'ejemplo@dominio.com',
+                prefixIcon: const Icon(Icons.email),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'El estudiante debe estar registrado en RobleAuth',
+                      style: TextStyle(fontSize: 12, color: Colors.blue),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
+          Obx(() => ElevatedButton(
+            onPressed: controller.isLoadingStudents.value
+                ? null
+                : () async {
+                    final email = emailController.text.trim();
+                    if (email.isNotEmpty) {
+                      Get.back(); // Cerrar diálogo
+                      await controller.buscarEstudiantePorEmail(email);
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: controller.isLoadingStudents.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Buscar y Agregar'),
+          )),
+        ],
+      ),
     );
   }
 }

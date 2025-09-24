@@ -5,15 +5,15 @@ import '../../domain/usecases/categoria_equipo_usecase.dart';
 import '../../domain/entities/categoria_equipo_entity.dart';
 import '../../domain/entities/equipo_entity.dart';
 import '../../../home/domain/entities/curso_entity.dart';
-import '../../../auth/presentation/controllers/roble_auth_login_controller.dart';
+import '../../../auth/presentation/services/auth_service.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../domain/entities/tipo_asignacion.dart';
 
 class CategoriaEquipoController extends GetxController {
   final CategoriaEquipoUseCase _categoriaEquipoUseCase;
-  final RobleAuthLoginController _authController;
+  final AuthService _authService;
 
-  CategoriaEquipoController(this._categoriaEquipoUseCase, this._authController);
+  CategoriaEquipoController(this._categoriaEquipoUseCase, this._authService);
 
   // Estados observables
   var categorias = <CategoriaEquipo>[].obs;
@@ -51,7 +51,7 @@ class CategoriaEquipoController extends GetxController {
 
   /// Verifica si el usuario actual es el profesor/creador de un curso específico
   bool esProfesorDelCurso(CursoDomain curso) {
-    final currentUser = _authController.currentUser.value;
+    final currentUser = _authService.currentUser;
     if (currentUser == null) return false;
 
     // Un usuario es profesor de un curso si es quien lo creó (profesorId)
@@ -546,7 +546,7 @@ class CategoriaEquipoController extends GetxController {
     if (categoriaSeleccionada.value == null) return;
 
     try {
-      final userId = _authController.currentUser.value?.id;
+      final userId = _authService.currentUser?.id;
       if (userId == null) return;
 
       final equipo = await _categoriaEquipoUseCase.getEquipoPorEstudiante(
@@ -671,7 +671,7 @@ class CategoriaEquipoController extends GetxController {
     }
 
     try {
-      final userId = _authController.currentUser.value?.id;
+      final userId = _authService.currentUser?.id;
       if (userId == null) throw Exception('Usuario no autenticado');
 
       await _categoriaEquipoUseCase.crearEquipo(
@@ -757,7 +757,7 @@ class CategoriaEquipoController extends GetxController {
 
   Future<void> unirseAEquipo(Equipo equipo) async {
     try {
-      final userId = _authController.currentUser.value?.id;
+      final userId = _authService.currentUser?.id;
       if (userId == null) throw Exception('Usuario no autenticado');
 
       if (miEquipo.value != null) {
@@ -806,7 +806,7 @@ class CategoriaEquipoController extends GetxController {
             ),
             onPressed: () async {
               try {
-                final userId = _authController.currentUser.value?.id;
+                final userId = _authService.currentUser?.id;
                 if (userId == null) throw Exception('Usuario no autenticado');
 
                 await _categoriaEquipoUseCase.salirDeEquipo(
@@ -930,7 +930,7 @@ class CategoriaEquipoController extends GetxController {
     selectedTab.value = index;
   }
 
-  RobleAuthLoginController get authController => _authController;
+  AuthService get authService => _authService;
 
   void _showSuccessSnackbar(String title, String message) {
     Get.snackbar(
@@ -952,6 +952,19 @@ class CategoriaEquipoController extends GetxController {
       icon: const Icon(Icons.error, color: Colors.white),
       duration: const Duration(seconds: 3),
     );
+  }
+
+  /// Método para limpiar datos cuando se cambia de usuario/sesión
+  void limpiarDatos() {
+    categorias.clear();
+    equipos.clear();
+    cursoActual.value = null;
+    categoriaSeleccionada.value = null;
+    estudiantesInscritos.clear();
+    selectedTab.value = 0;
+    isLoading.value = false;
+    isLoadingEquipos.value = false;
+    isRemovingStudent.value = false;
   }
 
   @override

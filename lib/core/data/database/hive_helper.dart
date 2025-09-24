@@ -4,8 +4,11 @@ import '../../../src/features/home/domain/entities/curso_entity.dart';
 import '../../../src/features/home/domain/entities/inscripcion_entity.dart';
 import '../../../src/features/categories/domain/entities/categoria_equipo_entity.dart';
 import '../../../src/features/categories/domain/entities/equipo_entity.dart';
+import '../../../src/features/categories/domain/entities/equipo_actividad_entity.dart';
 import '../../../src/features/categories/domain/entities/tipo_asignacion.dart';
 import '../../../src/features/activities/domain/entities/activity.dart';
+import '../../../src/features/evaluations/domain/entities/evaluacion_periodo.dart';
+import '../../../src/features/evaluations/domain/entities/evaluacion_individual.dart';
 
 class HiveHelper {
   static const String usuariosBox = 'usuarios';
@@ -13,7 +16,10 @@ class HiveHelper {
   static const String inscripcionesBox = 'inscripciones';
   static const String categoriasEquipoBox = 'categorias_equipo';
   static const String equiposBox = 'equipos';
+  static const String equipoActividadBox = 'equipo_actividad';
   static const String activitiesBox = 'activities';
+  static const String evaluacionesPeriodoBox = 'evaluaciones_periodo';
+  static const String evaluacionesIndividualBox = 'evaluaciones_individual';
 
   // Boxes existentes
   static Box<Usuario>? _usuariosBox;
@@ -23,7 +29,10 @@ class HiveHelper {
   // Nuevos boxes
   static Box<CategoriaEquipo>? _categoriasEquipoBox;
   static Box<Equipo>? _equiposBox;
+  static Box<EquipoActividad>? _equipoActividadBox;
   static Box<Activity>? _activitiesBox;
+  static Box<EvaluacionPeriodo>? _evaluacionesPeriodoBox;
+  static Box<EvaluacionIndividual>? _evaluacionesIndividualBox;
 
   // Getters para boxes existentes
   static Box<Usuario> get usuariosBoxInstance => _usuariosBox!;
@@ -34,7 +43,13 @@ class HiveHelper {
   static Box<CategoriaEquipo> get categoriasEquipoBoxInstance =>
       _categoriasEquipoBox!;
   static Box<Equipo> get equiposBoxInstance => _equiposBox!;
+  static Box<EquipoActividad> get equipoActividadBoxInstance =>
+      _equipoActividadBox!;
   static Box<Activity> get activitiesBoxInstance => _activitiesBox!;
+  static Box<EvaluacionPeriodo> get evaluacionesPeriodoBoxInstance =>
+      _evaluacionesPeriodoBox!;
+  static Box<EvaluacionIndividual> get evaluacionesIndividualBoxInstance =>
+      _evaluacionesIndividualBox!;
 
   static Future<void> initHive() async {
     await Hive.initFlutter();
@@ -47,8 +62,12 @@ class HiveHelper {
     // Registrar nuevos adaptadores
     Hive.registerAdapter(CategoriaEquipoAdapter());
     Hive.registerAdapter(EquipoAdapter());
+    Hive.registerAdapter(EquipoActividadAdapter());
     Hive.registerAdapter(TipoAsignacionAdapter());
     Hive.registerAdapter(ActivityAdapter());
+    Hive.registerAdapter(EvaluacionPeriodoAdapter());
+    Hive.registerAdapter(EvaluacionIndividualAdapter());
+    Hive.registerAdapter(EstadoEvaluacionPeriodoAdapter());
 
     // Abrir boxes existentes
     _usuariosBox = await Hive.openBox<Usuario>(usuariosBox);
@@ -60,7 +79,16 @@ class HiveHelper {
       categoriasEquipoBox,
     );
     _equiposBox = await Hive.openBox<Equipo>(equiposBox);
+    _equipoActividadBox = await Hive.openBox<EquipoActividad>(
+      equipoActividadBox,
+    );
     _activitiesBox = await Hive.openBox<Activity>(activitiesBox);
+    _evaluacionesPeriodoBox = await Hive.openBox<EvaluacionPeriodo>(
+      evaluacionesPeriodoBox,
+    );
+    _evaluacionesIndividualBox = await Hive.openBox<EvaluacionIndividual>(
+      evaluacionesIndividualBox,
+    );
 
     // Cargar datos iniciales si no existen
     await _loadInitialData();

@@ -80,6 +80,9 @@ class CategoriaEquipoUseCase {
   Future<List<Equipo>> getEquiposPorCategoria(int categoriaId) =>
       _equipoRepository.getEquiposPorCategoria(categoriaId);
 
+  Future<Equipo?> getEquipoById(int equipoId) =>
+      _equipoRepository.getEquipoById(equipoId);
+
   Future<void> generarEquiposAleatorios(int categoriaId) async {
     final categoria = await _categoriaRepository.getCategoriaById(categoriaId);
     if (categoria == null) throw Exception('Categoría no encontrada');
