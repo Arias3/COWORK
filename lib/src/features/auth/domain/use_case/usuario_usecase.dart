@@ -65,84 +65,109 @@ class UsuarioUseCase {
 
   /// Crear usuario desde RobleAuth (sin contraseña obligatoria)
   Future<int?> createUsuarioFromAuth({
-    required String nombre,
-    required String email,
-    String? authUserId,
-    String? rol, // Opcional, si no se proporciona se detectará automáticamente
-  }) async {
-    try {
-      // Validaciones básicas
-      if (nombre.trim().isEmpty) throw Exception('El nombre es obligatorio');
-      if (email.trim().isEmpty) throw Exception('El email es obligatorio');
-      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-        throw Exception('Email no válido');
-      }
-      
-      final emailLimpio = email.trim().toLowerCase();
-      
-      // Verificar si ya existe
-      final usuarioExistente = await _repository.getUsuarioByEmail(emailLimpio);
-      if (usuarioExistente != null) {
-        print('Usuario ya existe: ${usuarioExistente.id}');
-        return usuarioExistente.id;
-      }
+  required String nombre,
+  required String email,
+  String? authUserId,
+  String? rol, // Este parámetro ahora solo sirve para forzar un rol explícito opcional
+}) async {
+  print("DEBUG createUsuarioFromAuth:");
+  print("  Email recibido: '$email'");
+  print("  Rol recibido (antes de detección): '$rol'");
+  
+  try {
+    // Validaciones básicas
+    if (nombre.trim().isEmpty) throw Exception('El nombre es obligatorio');
+    if (email.trim().isEmpty) throw Exception('El email es obligatorio');
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      throw Exception('Email no válido');
+    }
 
-      // Detectar rol automáticamente si no se proporciona
-      final rolFinal = rol ?? _detectarRolPorEmail(emailLimpio);
-      
-      // Generar ID único
-      final usuarios = await _repository.getUsuarios();
-      final nuevoId = usuarios.isEmpty 
+    // Limpiar email
+    final emailLimpio = email.trim().toLowerCase();
+
+    // Verificar si ya existe
+    final usuarioExistente = await _repository.getUsuarioByEmail(emailLimpio);
+    if (usuarioExistente != null) {
+      print('Usuario ya existe: ${usuarioExistente.id}');
+      return usuarioExistente.id;
+    }
+
+    // Detectar rol automáticamente **ignorar rol de RobleAuth si es "user"**
+    final rolFinal = (rol == null || rol == "user") 
+    ? detectarRolPorEmail(emailLimpio)
+    : rol;
+
+
+    print("Rol final asignado: $rolFinal");
+
+    // Generar ID único
+    final usuarios = await _repository.getUsuarios();
+    final nuevoId = usuarios.isEmpty 
         ? 1 
         : usuarios.map((u) => u.id!).reduce((a, b) => a > b ? a : b) + 1;
 
-      final usuario = Usuario(
-        id: nuevoId,
-        nombre: nombre.trim(),
-        email: emailLimpio,
-        authUserId: authUserId,
-        rol: rolFinal,
-        password: null, // RobleAuth no maneja contraseñas locales
-      );
+    final usuario = Usuario(
+      id: nuevoId,
+      nombre: nombre.trim(),
+      email: emailLimpio,
+      authUserId: authUserId,
+      rol: rolFinal,
+      password: null, // RobleAuth no maneja contraseñas locales
+    );
 
-      print('Creando usuario desde Auth: $nombre ($emailLimpio) como $rolFinal');
-      
-      final resultId = await _repository.createUsuario(usuario);
-      
-      print('Usuario creado exitosamente con ID: $resultId');
-      return resultId;
-      
-    } catch (e) {
-      print('Error creando usuario desde Auth: $e');
-      return null;
-    }
+    print('Creando usuario desde Auth: $nombre ($emailLimpio) como $rolFinal');
+
+    final resultId = await _repository.createUsuario(usuario);
+
+    print('Usuario creado exitosamente con ID: $resultId');
+    return resultId;
+
+  } catch (e) {
+    print('Error creando usuario desde Auth: $e');
+    return null;
   }
+}
+
 
   /// Detecta el rol automáticamente basado en el email
-  String _detectarRolPorEmail(String email) {
-    final emailLower = email.toLowerCase();
-    
-    // Reglas de negocio para detectar rol
-    if (emailLower.contains('@uninorte.edu.co')) {
-      // Emails institucionales
-      if (emailLower.startsWith('profesor.') || 
-          emailLower.startsWith('docente.') ||
-          emailLower.startsWith('teacher.')) {
-        return 'profesor';
-      }
-      // Por defecto, usuarios institucionales son estudiantes
-      return 'estudiante';
-    } else if (emailLower.contains('admin') || emailLower.contains('administrador')) {
-      return 'admin';
-    } else if (emailLower.contains('profesor') || 
-               emailLower.contains('teacher') ||
-               emailLower.contains('docente')) {
+  String detectarRolPorEmail(String email) {
+  // Limpiar email
+  final emailLimpio = email.trim();
+  final emailLower = emailLimpio.toLowerCase();
+
+  print("DEBUG _detectarRolPorEmail:");
+  print("  Email original: '$email'");
+  print("  Email limpio: '$emailLimpio'");
+  print("  Email lowercase: '$emailLower'");
+
+  // Emails institucionales
+  if (emailLower.contains('@uninorte.edu.co')) {
+    print("  Dominio institucional detectado");
+    if (RegExp(r'^(profesor|docente|teacher)\.').hasMatch(emailLower)) {
+      print("  Prefijo detectado: profesor → rol='profesor'");
       return 'profesor';
-    } else {
-      // Emails externos por defecto son estudiantes
-      return 'estudiante';
     }
+    print("  Prefijo no detectado → rol='estudiante'");
+    return 'estudiante';
   }
+
+  // Emails externos
+  if (emailLower.contains('admin') || emailLower.contains('administrador')) {
+    print("  Email contiene 'admin' → rol='admin'");
+    return 'admin';
+  }
+  if (emailLower.contains('profesor') ||
+      emailLower.contains('teacher') ||
+      emailLower.contains('docente')) {
+    print("  Email contiene palabra clave → rol='profesor'");
+    return 'profesor';
+  }
+
+  print("  Ninguna regla coincide → rol='estudiante'");
+  return 'estudiante';
+}
+
+
 
   /// Obtiene o crea usuario desde RobleAuth con selección de rol
   Future<Usuario?> obtenerOCrearUsuarioAuth({
@@ -162,7 +187,7 @@ class UsuarioUseCase {
       }
       
       // Usuario nuevo - usar rol seleccionado o detectar automáticamente
-      final rolFinal = rolSeleccionado ?? _detectarRolPorEmail(emailLimpio);
+      final rolFinal = rolSeleccionado ?? detectarRolPorEmail(emailLimpio);
       
       print('Usuario nuevo detectado. Rol sugerido: $rolFinal');
       

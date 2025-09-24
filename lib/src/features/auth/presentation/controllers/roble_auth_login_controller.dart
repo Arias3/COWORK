@@ -9,6 +9,7 @@ import '../../../../../core/data/database/roble_config.dart';
 import '../../../../../core/di/dependency_injection.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../domain/use_case/usuario_usecase.dart';
 
 // Extensión para firstWhereOrNull si no está disponible
 extension IterableExtension<T> on Iterable<T> {
@@ -51,230 +52,159 @@ class RobleAuthLoginController extends GetxController {
   }
 
   Future<bool> login({
-    required String email,
-    required String password,
-    bool rememberMe = false,
-  }) async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
-      final result = await useCase.call(email: email, password: password);
-      accessToken.value = result['accessToken'] ?? '';
-      refreshToken.value = result['refreshToken'] ?? '';
+  required String email,
+  required String password,
+  bool rememberMe = false,
+}) async {
+  try {
+    isLoading.value = true;
+    errorMessage.value = '';
 
-      // Configurar token único para tu proyecto
-      RobleConfig.setAccessToken(accessToken.value);
+    // Llamar al login de RobleAuth
+    final result = await useCase.call(email: email, password: password);
+    accessToken.value = result['accessToken'] ?? '';
+    refreshToken.value = result['refreshToken'] ?? '';
 
-      // Activar Roble directamente (tablas ya creadas manualmente)
-      if (accessToken.value.isNotEmpty && !RobleConfig.useRoble) {
-        RobleConfig.useRoble = true;
-        print('✅ Roble activado - usando tablas existentes');
-      }
+    // Configurar token único para tu proyecto
+    RobleConfig.setAccessToken(accessToken.value);
 
-      // Guardar tokens
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('accessToken', accessToken.value);
-      await prefs.setString('refreshToken', refreshToken.value);
+    // Activar Roble directamente (tablas ya creadas manualmente)
+    if (accessToken.value.isNotEmpty && !RobleConfig.useRoble) {
+      RobleConfig.useRoble = true;
+      print('✅ Roble activado - usando tablas existentes');
+    }
 
-      // Guardar credenciales si es necesario
-      if (rememberMe) {
-        await saveCredentials(email, password);
-      } else {
-        await prefs.remove('savedEmail');
-        await prefs.remove('savedPassword');
-      }
+    // Guardar tokens
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accessToken', accessToken.value);
+    await prefs.setString('refreshToken', refreshToken.value);
 
-      // Procesar información del usuario
-      if (result['user'] != null) {
-        final userData = result['user'] as Map<String, dynamic>;
-        final authUserId = userData['id'].toString();
-        final emailNormalizado = email.toLowerCase().trim();
-        
-        final userRepo = Get.find<UsuarioRepository>();
-        Usuario? perfil;
-        
-        print('🔍 === BÚSQUEDA Y REPARACIÓN DE USUARIO ===');
-        print('Email: $emailNormalizado');
-        print('AuthUserId: $authUserId');
-        
-        try {
-          // 1. Buscar por email
-          perfil = await userRepo.getUsuarioByEmail(emailNormalizado);
-          print('🔍 Búsqueda por email: ${perfil != null ? 'ENCONTRADO' : 'NO ENCONTRADO'}');
-          
-          if (perfil != null) {
-            print('📋 Usuario encontrado - ID actual: ${perfil.id}, Rol: ${perfil.rol}');
-            
-            // REPARAR DATOS SI ES NECESARIO
-            bool necesitaReparacion = false;
-            
-            // Reparar ID si es null o 0
-            if (perfil.id == null || perfil.id! <= 0) {
-              print('🔧 REPARANDO: Usuario sin ID válido');
-              
-              if (perfil.robleId != null && perfil.robleId!.isNotEmpty) {
-                // Regenerar ID basado en robleId existente
-                final nuevoId = perfil.robleId!.hashCode.abs();
-                perfil.id = nuevoId == 0 ? 1 : nuevoId;
-              } else {
-                // Generar nuevo ID y buscar el robleId en Roble
-                final nuevoId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
-                perfil.id = nuevoId == 0 ? 1 : nuevoId;
-              }
-              
-              necesitaReparacion = true;
-              print('🆔 Nuevo ID asignado: ${perfil.id}');
-            }
-            
-            // Reparar authUserId
-            if (perfil.authUserId != authUserId) {
-              perfil.authUserId = authUserId;
-              necesitaReparacion = true;
-              print('🔧 REPARANDO: AuthUserId actualizado');
-            }
-            
-            // Reparar nombre
-            final nuevoNombre = userData['name'] ?? '';
-            if (nuevoNombre.isNotEmpty && perfil.nombre != nuevoNombre) {
-              perfil.nombre = nuevoNombre;
-              necesitaReparacion = true;
-              print('🔧 REPARANDO: Nombre actualizado a "$nuevoNombre"');
-            }
-            
-            // Reparar rol - Mantener rol existente si es profesor, sino mapear del auth
-            final rolAuth = userData['role'] ?? 'user';
-            final rolMapeado = _mapRoleToLocal(rolAuth);
-            
-            if (perfil.rol != 'profesor' && (rolMapeado == 'profesor' || rolAuth.toLowerCase() == 'teacher')) {
-              perfil.rol = 'profesor';
-              necesitaReparacion = true;
-              print('🔧 REPARANDO: Rol actualizado a profesor');
-            } else if (perfil.rol == 'estudiante' && rolAuth.toLowerCase() == 'teacher') {
-              perfil.rol = 'profesor';
-              necesitaReparacion = true;
-              print('🔧 REPARANDO: Estudiante promovido a profesor por auth');
-            }
-            
-            // Guardar reparaciones
-            if (necesitaReparacion) {
-              try {
-                print('💾 Guardando reparaciones en BD...');
-                await userRepo.updateUsuario(perfil);
-                print('✅ Usuario actualizado correctamente');
-              } catch (e) {
-                print('⚠️ Error guardando reparaciones: $e');
-                // Continuar con usuario reparado en memoria
-              }
-            }
-            
-            currentUser.value = perfil;
-            print('✅ Login completado - Usuario: ${perfil.nombre} (ID: ${perfil.id}, Rol: ${perfil.rol})');
-            
-          } else {
-            // 2. Si no existe por email, buscar por authUserId
-            print('🔍 No encontrado por email, buscando por authUserId...');
-            
-            try {
-              perfil = await userRepo.getUsuarioByAuthId(authUserId);
-              
-              if (perfil != null) {
-                print('✅ Encontrado por authUserId con ID: ${perfil.id}');
-                currentUser.value = perfil;
-              } else {
-                // 3. Usuario no existe, crear nuevo
-                print('🆕 Usuario no existe, creando nuevo...');
-                
-                final rolMapeado = _mapRoleToLocal(userData['role'] ?? 'user');
-                print('👤 Creando usuario con rol: $rolMapeado');
-                
-                final nuevoUsuario = Usuario(
-                  nombre: userData['name'] ?? 'Usuario',
-                  email: emailNormalizado,
-                  password: '',
-                  rol: rolMapeado,
-                  authUserId: authUserId,
-                );
-                
-                try {
-                  final nuevoId = await userRepo.createUsuario(nuevoUsuario);
-                  
-                  if (nuevoId != null && nuevoId > 0) {
-                    print('✅ Usuario creado con ID: $nuevoId');
-                    
-                    Get.snackbar(
-                      rolMapeado == 'profesor' ? 'Profesor Registrado' : 'Usuario Creado',
-                      'Bienvenido ${nuevoUsuario.nombre}',
-                      backgroundColor: Get.theme.colorScheme.primary,
-                      colorText: Get.theme.colorScheme.onPrimary,
-                      snackPosition: SnackPosition.TOP,
-                    );
-                  } else {
-                    // ID inválido, usar temporal
-                    final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
-                    nuevoUsuario.id = tempId == 0 ? 1 : tempId;
-                    print('🔧 Usando ID temporal: ${nuevoUsuario.id}');
-                    
-                    Get.snackbar(
-                      'Usuario Temporal',
-                      'Perfil creado temporalmente',
-                      backgroundColor: Get.theme.colorScheme.secondary,
-                      colorText: Get.theme.colorScheme.onSecondary,
-                      snackPosition: SnackPosition.TOP,
-                    );
-                  }
-                  
-                  currentUser.value = nuevoUsuario;
-                  
-                } catch (e) {
-                  print('❌ Error creando usuario: $e');
-                  
-                  // Crear usuario temporal en memoria
-                  final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
-                  nuevoUsuario.id = tempId == 0 ? 1 : tempId;
-                  currentUser.value = nuevoUsuario;
-                  
-                  Get.snackbar(
-                    'Usuario Temporal',
-                    'Perfil temporal creado. ID: ${nuevoUsuario.id}',
-                    backgroundColor: Colors.orange,
-                    colorText: Colors.white,
-                    snackPosition: SnackPosition.TOP,
-                  );
-                }
-              }
-            } catch (e) {
-              print('❌ Error en búsqueda por authUserId: $e');
-            }
+    // Guardar credenciales si es necesario
+    if (rememberMe) {
+      await saveCredentials(email, password);
+    } else {
+      await prefs.remove('savedEmail');
+      await prefs.remove('savedPassword');
+    }
+
+    // Procesar información del usuario
+    if (result['user'] != null) {
+      final userData = result['user'] as Map<String, dynamic>;
+      final authUserId = userData['id'].toString();
+      final emailNormalizado = email.toLowerCase().trim();
+
+      final usuarioUseCase = Get.find<UsuarioUseCase>();
+      Usuario? perfil;
+
+      print('🔍 === BÚSQUEDA Y REPARACIÓN DE USUARIO ===');
+      print('Email: $emailNormalizado');
+      print('AuthUserId: $authUserId');
+
+      try {
+        // 1. Buscar por email
+        perfil = await usuarioUseCase.getUsuarioByEmail(emailNormalizado);
+        print('🔍 Búsqueda por email: ${perfil != null ? 'ENCONTRADO' : 'NO ENCONTRADO'}');
+
+        if (perfil != null) {
+          print('📋 Usuario encontrado - ID actual: ${perfil.id}, Rol: ${perfil.rol}');
+
+          // REPARAR DATOS SI ES NECESARIO
+          bool necesitaReparacion = false;
+
+          // Reparar ID si es null o 0
+          if (perfil.id == null || perfil.id! <= 0) {
+            final nuevoId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
+            perfil.id = nuevoId == 0 ? 1 : nuevoId;
+            necesitaReparacion = true;
+            print('🆔 Nuevo ID asignado: ${perfil.id}');
           }
-          
-        } catch (e) {
-          print('❌ Error general en procesamiento de usuario: $e');
-          
-          // Crear usuario de emergencia
-          final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
-          final usuarioEmergencia = Usuario(
-            id: tempId == 0 ? 1 : tempId,
+
+          // Reparar authUserId
+          if (perfil.authUserId != authUserId) {
+            perfil.authUserId = authUserId;
+            necesitaReparacion = true;
+            print('🔧 REPARANDO: AuthUserId actualizado');
+          }
+
+          // Reparar nombre
+          final nuevoNombre = userData['name'] ?? '';
+          if (nuevoNombre.isNotEmpty && perfil.nombre != nuevoNombre) {
+            perfil.nombre = nuevoNombre;
+            necesitaReparacion = true;
+            print('🔧 REPARANDO: Nombre actualizado a "$nuevoNombre"');
+          }
+
+          // Reparar rol: si no es profesor, detectar automáticamente por email o authRole
+          final rolFinal = (perfil.rol != null && perfil.rol == 'profesor')
+              ? 'profesor'
+              : usuarioUseCase.detectarRolPorEmail(emailNormalizado);
+
+          if (perfil.rol != rolFinal) {
+            perfil.rol = rolFinal;
+            necesitaReparacion = true;
+            print('🔧 REPARANDO: Rol actualizado a $rolFinal');
+          }
+
+          // Guardar reparaciones
+          if (necesitaReparacion) {
+            await usuarioUseCase.updateUsuario(perfil);
+            print('✅ Usuario actualizado correctamente');
+          }
+
+          currentUser.value = perfil;
+          print('✅ Login completado - Usuario: ${perfil.nombre} (ID: ${perfil.id}, Rol: ${perfil.rol})');
+
+        } else {
+          // 2. Usuario no existe, crear nuevo
+          print('🆕 Usuario no existe, creando nuevo...');
+          final rolFinal = usuarioUseCase.detectarRolPorEmail(emailNormalizado);
+          final nuevoUsuario = Usuario(
             nombre: userData['name'] ?? 'Usuario',
             email: emailNormalizado,
             password: '',
-            rol: _mapRoleToLocal(userData['role'] ?? 'user'),
+            rol: rolFinal,
             authUserId: authUserId,
           );
-          
-          currentUser.value = usuarioEmergencia;
-          print('🚨 Usuario de emergencia creado con ID: ${usuarioEmergencia.id}');
-        }
-      }
 
-      return accessToken.value.isNotEmpty;
-    } catch (e) {
-      print('❌ Error en login: $e');
-      errorMessage.value = e.toString();
-      return false;
-    } finally {
-      isLoading.value = false;
+          final nuevoId = await usuarioUseCase.createUsuarioFromAuth(
+            nombre: nuevoUsuario.nombre,
+            email: nuevoUsuario.email,
+            authUserId: authUserId,
+            rol: rolFinal,
+          );
+
+          if (nuevoId != null) {
+            nuevoUsuario.id = nuevoId;
+            print('✅ Usuario creado con ID: $nuevoId');
+          }
+
+          currentUser.value = nuevoUsuario;
+
+          Get.snackbar(
+            rolFinal == 'profesor' ? 'Profesor Registrado' : 'Usuario Creado',
+            'Bienvenido ${nuevoUsuario.nombre}',
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
+            snackPosition: SnackPosition.TOP,
+          );
+        }
+
+      } catch (e) {
+        print('❌ Error general en procesamiento de usuario: $e');
+      }
     }
+
+    return accessToken.value.isNotEmpty;
+  } catch (e) {
+    print('❌ Error en login: $e');
+    errorMessage.value = e.toString();
+    return false;
+  } finally {
+    isLoading.value = false;
   }
+}
+
+
 
   Future<bool> refreshAccessTokenIfNeeded() async {
     final prefs = await SharedPreferences.getInstance();

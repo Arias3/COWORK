@@ -115,4 +115,6 @@ class CursoUseCase {
   Future<List<Inscripcion>> getInscripcionesPorCurso(int cursoId) async {
   return await _inscripcionRepository.getInscripcionesPorCurso(cursoId);
 }
+
+
 }
