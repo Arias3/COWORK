@@ -11,7 +11,9 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
   Future<List<Inscripcion>> getInscripciones() async {
     try {
       final data = await _dataSource.getAll(tableName);
-      return data.map((json) => RobleInscripcionDto.fromJson(json).toEntity()).toList();
+      return data
+          .map((json) => RobleInscripcionDto.fromJson(json).toEntity())
+          .toList();
     } catch (e) {
       print('Error obteniendo inscripciones de Roble: $e');
       return [];
@@ -21,8 +23,14 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
   @override
   Future<List<Inscripcion>> getInscripcionesPorUsuario(int usuarioId) async {
     try {
-      final data = await _dataSource.getWhere(tableName, 'usuario_id', usuarioId);
-      return data.map((json) => RobleInscripcionDto.fromJson(json).toEntity()).toList();
+      final data = await _dataSource.getWhere(
+        tableName,
+        'usuario_id',
+        usuarioId,
+      );
+      return data
+          .map((json) => RobleInscripcionDto.fromJson(json).toEntity())
+          .toList();
     } catch (e) {
       print('Error obteniendo inscripciones por usuario de Roble: $e');
       return [];
@@ -33,7 +41,9 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
   Future<List<Inscripcion>> getInscripcionesPorCurso(int cursoId) async {
     try {
       final data = await _dataSource.getWhere(tableName, 'curso_id', cursoId);
-      return data.map((json) => RobleInscripcionDto.fromJson(json).toEntity()).toList();
+      return data
+          .map((json) => RobleInscripcionDto.fromJson(json).toEntity())
+          .toList();
     } catch (e) {
       print('Error obteniendo inscripciones por curso de Roble: $e');
       return [];
@@ -44,13 +54,16 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
   Future<Inscripcion?> getInscripcion(int usuarioId, int cursoId) async {
     try {
       final data = await _dataSource.getAll(tableName);
-      final inscripciones = data.where(
-        (item) => item['usuario_id'] == usuarioId && item['curso_id'] == cursoId
-      ).toList();
-      
-      return inscripciones.isNotEmpty 
-        ? RobleInscripcionDto.fromJson(inscripciones.first).toEntity() 
-        : null;
+      final inscripciones = data
+          .where(
+            (item) =>
+                item['usuario_id'] == usuarioId && item['curso_id'] == cursoId,
+          )
+          .toList();
+
+      return inscripciones.isNotEmpty
+          ? RobleInscripcionDto.fromJson(inscripciones.first).toEntity()
+          : null;
     } catch (e) {
       print('Error obteniendo inscripción específica de Roble: $e');
       return null;
@@ -61,14 +74,14 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
   Future<int> createInscripcion(Inscripcion inscripcion) async {
     try {
       final dto = RobleInscripcionDto.fromEntity(inscripcion);
-      
+
       print('📝 [ROBLE] Creando inscripción:');
       print('  - Usuario ID: ${inscripcion.usuarioId}');
       print('  - Curso ID: ${inscripcion.cursoId}');
-      
+
       final response = await _dataSource.create(tableName, dto.toJson());
       final nuevoId = response['id'] ?? 0;
-      
+
       print('✅ [ROBLE] Inscripción creada con ID: $nuevoId');
       return nuevoId;
     } catch (e) {

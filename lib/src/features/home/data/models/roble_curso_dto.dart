@@ -24,25 +24,59 @@ class RobleCursoDto {
   });
 
   factory RobleCursoDto.fromJson(Map<String, dynamic> json) {
-    return RobleCursoDto(
-      id: json['id'],
+    print('🔄 [HYBRID] Mapeando JSON a curso...');
+    print('   - JSON keys: ${json.keys.join(', ')}');
+
+    // ✅ CORRECCIÓN CRÍTICA: Obtener ID de _id o id
+    dynamic rawId = json['_id'] ?? json['id'];
+    int? convertedId;
+
+    if (rawId != null) {
+      print('🔄 [HYBRID] Convirtiendo ID: $rawId (tipo: ${rawId.runtimeType})');
+
+      if (rawId is String && rawId.isNotEmpty) {
+        // Convertir string ID de Roble a número usando hashCode
+        final hashCode = rawId.hashCode.abs();
+        convertedId = hashCode == 0 ? 1 : hashCode;
+        print('✅ [HYBRID] String ID convertido: "$rawId" -> $convertedId');
+      } else if (rawId is int && rawId > 0) {
+        convertedId = rawId;
+        print('✅ [HYBRID] Numeric ID usado: $convertedId');
+      }
+    }
+
+    final curso = RobleCursoDto(
+      id: convertedId,
       nombre: json['nombre'] ?? '',
       descripcion: json['descripcion'] ?? '',
       codigoRegistro: json['codigo_registro'] ?? '',
       profesorId: json['profesor_id'] ?? 0,
       creadoEn: json['creado_en'] ?? DateTime.now().toIso8601String(),
-      categorias: json['categorias'] != null 
-          ? (json['categorias'] is String 
-              ? (json['categorias'] as String).split(',').where((s) => s.isNotEmpty).toList()
-              : List<String>.from(json['categorias']))
+      categorias: json['categorias'] != null
+          ? (json['categorias'] is String
+                ? (json['categorias'] as String)
+                      .split(',')
+                      .where((s) => s.isNotEmpty)
+                      .toList()
+                : List<String>.from(json['categorias']))
           : [],
       imagen: json['imagen'],
-      estudiantesNombres: json['estudiantes_nombres'] != null 
-          ? (json['estudiantes_nombres'] is String 
-              ? (json['estudiantes_nombres'] as String).split(',').where((s) => s.isNotEmpty).toList()
-              : List<String>.from(json['estudiantes_nombres']))
+      estudiantesNombres: json['estudiantes_nombres'] != null
+          ? (json['estudiantes_nombres'] is String
+                ? (json['estudiantes_nombres'] as String)
+                      .split(',')
+                      .where((s) => s.isNotEmpty)
+                      .toList()
+                : List<String>.from(json['estudiantes_nombres']))
           : [],
     );
+
+    print('✅ [HYBRID] Curso mapeado correctamente:');
+    print('   - Nombre: ${curso.nombre}');
+    print('   - ID original: $rawId');
+    print('   - ID convertido: ${curso.id}');
+
+    return curso;
   }
 
   factory RobleCursoDto.fromEntity(CursoDomain curso) {
@@ -52,7 +86,8 @@ class RobleCursoDto {
       descripcion: curso.descripcion,
       codigoRegistro: curso.codigoRegistro,
       profesorId: curso.profesorId ?? 0, // ✅ Manejar null con valor por defecto
-      creadoEn: (curso.creadoEn ?? curso.fechaCreacion).toIso8601String(), // ✅ Usar fechaCreacion como fallback
+      creadoEn: (curso.creadoEn ?? curso.fechaCreacion)
+          .toIso8601String(), // ✅ Usar fechaCreacion como fallback
       categorias: curso.categorias,
       imagen: curso.imagen,
       estudiantesNombres: curso.estudiantesNombres,
@@ -67,15 +102,26 @@ class RobleCursoDto {
       'codigo_registro': codigoRegistro,
       'profesor_id': profesorId,
       'creado_en': creadoEn,
-      'categorias': categorias.join(','), // ✅ Convertir array a string separado por comas
+      'categorias': categorias.join(
+        ',',
+      ), // ✅ Convertir array a string separado por comas
       'imagen': imagen,
-      'estudiantes_nombres': estudiantesNombres.join(','), // ✅ Convertir array a string separado por comas
+      'estudiantes_nombres': estudiantesNombres.join(
+        ',',
+      ), // ✅ Convertir array a string separado por comas
     };
   }
 
   CursoDomain toEntity() {
+    // ✅ CORRECCIÓN: Asegurar que nunca se retorne ID 0
+    final finalId = id ?? 1; // Si es null, usar 1 en lugar de 0
+
+    print('🔄 [HYBRID] Convirtiendo DTO a entidad:');
+    print('   - ID: $finalId');
+    print('   - Nombre: $nombre');
+
     return CursoDomain(
-      id: id ?? 0,
+      id: finalId,
       nombre: nombre,
       descripcion: descripcion,
       codigoRegistro: codigoRegistro,
@@ -84,7 +130,9 @@ class RobleCursoDto {
       categorias: categorias,
       imagen: imagen,
       estudiantesNombres: estudiantesNombres,
-      fechaCreacion: DateTime.parse(creadoEn), // ✅ Mismo valor para fechaCreacion
+      fechaCreacion: DateTime.parse(
+        creadoEn,
+      ), // ✅ Mismo valor para fechaCreacion
     );
   }
 }

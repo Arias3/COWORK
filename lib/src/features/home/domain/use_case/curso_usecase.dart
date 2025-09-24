@@ -10,29 +10,29 @@ class CursoUseCase {
   CursoUseCase(this._cursoRepository, this._inscripcionRepository);
 
   Future<List<CursoDomain>> getCursos() => _cursoRepository.getCursos();
-  
+
   Future<List<CursoDomain>> getCursosPorProfesor(int profesorId) =>
       _cursoRepository.getCursosPorProfesor(profesorId);
-    
+
   Future<List<CursoDomain>> getCursosInscritos(int usuarioId) async {
-  final inscripciones = await _inscripcionRepository.getInscripcionesPorUsuario(usuarioId);
+    final inscripciones = await _inscripcionRepository
+        .getInscripcionesPorUsuario(usuarioId);
 
-  final cursos = <CursoDomain>[];
-  for (final inscripcion in inscripciones) {
-    final curso = await getCursoById(inscripcion.cursoId);
-    if (curso != null) {
-      cursos.add(curso);
-    } else {
-      print('⚠️ No se encontró curso para ID ${inscripcion.cursoId}');
+    final cursos = <CursoDomain>[];
+    for (final inscripcion in inscripciones) {
+      final curso = await getCursoById(inscripcion.cursoId);
+      if (curso != null) {
+        cursos.add(curso);
+      } else {
+        print('⚠️ No se encontró curso para ID ${inscripcion.cursoId}');
+      }
     }
+    return cursos;
   }
-  return cursos;
-}
 
+  Future<CursoDomain?> getCursoById(int id) =>
+      _cursoRepository.getCursoById(id);
 
-
-  Future<CursoDomain?> getCursoById(int id) => _cursoRepository.getCursoById(id);
-  
   Future<CursoDomain?> getCursoByCodigoRegistro(String codigo) =>
       _cursoRepository.getCursoByCodigoRegistro(codigo);
 
@@ -46,12 +46,17 @@ class CursoUseCase {
     List<String>? estudiantesNombres,
   }) async {
     // Validaciones básicas
-    if (nombre.trim().isEmpty) throw Exception('El nombre del curso es obligatorio');
-    if (descripcion.trim().isEmpty) throw Exception('La descripción es obligatoria');
-    if (codigoRegistro.trim().isEmpty) throw Exception('El código de registro es obligatorio');
+    if (nombre.trim().isEmpty)
+      throw Exception('El nombre del curso es obligatorio');
+    if (descripcion.trim().isEmpty)
+      throw Exception('La descripción es obligatoria');
+    if (codigoRegistro.trim().isEmpty)
+      throw Exception('El código de registro es obligatorio');
 
     // ✅ VALIDACIÓN CRÍTICA: Verificar que el código no exista
-    final cursoExistente = await _cursoRepository.getCursoByCodigoRegistro(codigoRegistro.trim());
+    final cursoExistente = await _cursoRepository.getCursoByCodigoRegistro(
+      codigoRegistro.trim(),
+    );
     if (cursoExistente != null) {
       throw Exception('Ya existe un curso con el código "$codigoRegistro"');
     }
@@ -70,14 +75,17 @@ class CursoUseCase {
     return await _cursoRepository.createCurso(curso);
   }
 
-  Future<void> updateCurso(CursoDomain curso) => _cursoRepository.updateCurso(curso);
-  
+  Future<void> updateCurso(CursoDomain curso) =>
+      _cursoRepository.updateCurso(curso);
+
   Future<void> deleteCurso(int id) => _cursoRepository.deleteCurso(id);
 
   Future<void> inscribirseEnCurso(int usuarioId, String codigoRegistro) async {
     print('🔍 Buscando curso con código: "$codigoRegistro"');
-    
-    final curso = await _cursoRepository.getCursoByCodigoRegistro(codigoRegistro.trim());
+
+    final curso = await _cursoRepository.getCursoByCodigoRegistro(
+      codigoRegistro.trim(),
+    );
     if (curso == null) {
       print('❌ No se encontró curso con código: "$codigoRegistro"');
       throw Exception('Código de curso no válido');
@@ -85,15 +93,15 @@ class CursoUseCase {
 
     print('✅ Curso encontrado: ${curso.nombre} (ID: ${curso.id})');
 
-    final yaInscrito = await _inscripcionRepository.estaInscrito(usuarioId, curso.id!);
+    final yaInscrito = await _inscripcionRepository.estaInscrito(
+      usuarioId,
+      curso.id,
+    );
     if (yaInscrito) {
       throw Exception('Ya estás inscrito en este curso');
     }
 
-    final inscripcion = Inscripcion(
-      usuarioId: usuarioId,
-      cursoId: curso.id!,
-    );
+    final inscripcion = Inscripcion(usuarioId: usuarioId, cursoId: curso.id);
 
     await _inscripcionRepository.createInscripcion(inscripcion);
     print('✅ Usuario $usuarioId inscrito en curso ${curso.id}');
@@ -101,7 +109,9 @@ class CursoUseCase {
 
   // Método auxiliar para generar códigos automáticos si es necesario
   String generateCourseCode(String nombre) {
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
+    final timestamp = DateTime.now().millisecondsSinceEpoch
+        .toString()
+        .substring(7);
     final nameCode = nombre.replaceAll(' ', '').toUpperCase().substring(0, 3);
     return '$nameCode$timestamp';
   }
@@ -113,8 +123,6 @@ class CursoUseCase {
   }
 
   Future<List<Inscripcion>> getInscripcionesPorCurso(int cursoId) async {
-  return await _inscripcionRepository.getInscripcionesPorCurso(cursoId);
-}
-
-
+    return await _inscripcionRepository.getInscripcionesPorCurso(cursoId);
+  }
 }
