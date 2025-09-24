@@ -289,7 +289,7 @@ class CursoRepositoryHybridImpl implements CursoRepository {
   // ========================================================================
   @override
   Future<CursoDomain?> getCursoByCodigoRegistro(String codigo) async {
-    final codigoLimpio = codigo.trim().toLowerCase();
+    final codigoLimpio = codigo.trim();
     print('🔍 [HYBRID] Buscando curso con código: "$codigoLimpio"');
     
     try {
