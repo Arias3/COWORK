@@ -37,6 +37,7 @@ class _RealizarEvaluacionPageState extends State<RealizarEvaluacionPage> {
 
   bool _isLoading = false;
   String? _currentUserId;
+  bool _permitirAutoEvaluacion = false;
 
   @override
   void initState() {
@@ -50,12 +51,37 @@ class _RealizarEvaluacionPageState extends State<RealizarEvaluacionPage> {
     });
 
     await _obtenerUsuarioActual();
+    await _verificarAutoEvaluacion();
     _inicializarCalificaciones();
     await _cargarEvaluacionesExistentes();
 
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _verificarAutoEvaluacion() async {
+    try {
+      print('🔍 [AUTO-EVAL] Verificando si se permite auto-evaluación...');
+
+      if (_currentUserId != null) {
+        // Verificar si el usuario actual puede evaluarse a sí mismo
+        _permitirAutoEvaluacion = await _evaluacionController.puedeEvaluar(
+          _currentUserId!,
+          _currentUserId!,
+          widget.evaluacionPeriodoId,
+        );
+        print(
+          '✅ [AUTO-EVAL] Auto-evaluación permitida: $_permitirAutoEvaluacion',
+        );
+      } else {
+        print('⚠️ [AUTO-EVAL] No hay usuario actual');
+        _permitirAutoEvaluacion = false;
+      }
+    } catch (e) {
+      print('❌ [AUTO-EVAL] Error verificando auto-evaluación: $e');
+      _permitirAutoEvaluacion = false;
+    }
   }
 
   Future<void> _obtenerUsuarioActual() async {
@@ -104,8 +130,12 @@ class _RealizarEvaluacionPageState extends State<RealizarEvaluacionPage> {
     for (var miembro in widget.miembrosEquipo) {
       final miembroId = miembro['id'].toString();
 
-      // No cargar para el usuario actual (no puede evaluarse a sí mismo)
-      if (miembroId == _currentUserId) continue;
+      // Solo cargar para miembros que pueden ser evaluados
+      // - Otros miembros siempre
+      // - Usuario actual solo si se permite auto-evaluación
+      if (miembroId == _currentUserId && !_permitirAutoEvaluacion) {
+        continue;
+      }
 
       try {
         print(
@@ -361,15 +391,19 @@ class _RealizarEvaluacionPageState extends State<RealizarEvaluacionPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Evalúa a tus compañeros de equipo:',
+                  Text(
+                    _permitirAutoEvaluacion
+                        ? 'Evalúa a tus compañeros de equipo y a ti mismo:'
+                        : 'Evalúa a tus compañeros de equipo:',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   ...widget.miembrosEquipo
                       .where(
-                        (miembro) => miembro['id'].toString() != _currentUserId,
-                      ) // Excluir al usuario actual
+                        (miembro) =>
+                            _permitirAutoEvaluacion ||
+                            miembro['id'].toString() != _currentUserId,
+                      ) // Incluir al usuario actual solo si se permite auto-evaluación
                       .map((miembro) => _buildMiembroEvaluacion(miembro)),
                 ],
               ),
@@ -394,12 +428,38 @@ class _RealizarEvaluacionPageState extends State<RealizarEvaluacionPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    '$nombre $apellido',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '$nombre $apellido',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (miembroId == _currentUserId) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[300]!),
+                          ),
+                          child: Text(
+                            'Tú mismo',
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 if (evaluacionEnviada)

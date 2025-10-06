@@ -603,6 +603,24 @@ class EvaluacionIndividualController extends GetxController {
     _limpiarCalificacionesTemporales();
   }
 
+  // Método para verificar si puede evaluar (incluye auto-evaluación)
+  Future<bool> puedeEvaluar(
+    String evaluadorId,
+    String evaluadoId,
+    String evaluacionPeriodoId,
+  ) async {
+    try {
+      return await _useCase.puedeEvaluar(
+        evaluadorId,
+        evaluadoId,
+        evaluacionPeriodoId,
+      );
+    } catch (e) {
+      print('❌ Error verificando si puede evaluar: $e');
+      return false;
+    }
+  }
+
   @override
   void onClose() {
     limpiarCache();

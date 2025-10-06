@@ -461,8 +461,9 @@ class _CrearEvaluacionPageState extends State<CrearEvaluacionPage> {
               ? DateTime.now().add(Duration(hours: _duracionHoras))
               : null,
           profesorId: usuario.id.toString(),
-          evaluacionEntrePares:
-              !_permitirAutoEvaluacion, // Si permite auto-evaluación, no es solo entre pares
+          evaluacionEntrePares: true, // Siempre permitir evaluación entre pares
+          permitirAutoEvaluacion:
+              _permitirAutoEvaluacion, // Usar la opción correcta
           criteriosEvaluacion: [
             'Puntualidad',
             'Contribuciones',

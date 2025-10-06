@@ -10,6 +10,7 @@ class RobleEvaluacionPeriodoDto {
   final String fechaCreacion; // ISO String
   final String profesorId;
   final bool evaluacionEntrePares;
+  final bool permitirAutoEvaluacion;
   final List<String> criteriosEvaluacion;
   final String estado;
   final bool habilitarComentarios;
@@ -26,6 +27,7 @@ class RobleEvaluacionPeriodoDto {
     required this.fechaCreacion,
     required this.profesorId,
     required this.evaluacionEntrePares,
+    required this.permitirAutoEvaluacion,
     required this.criteriosEvaluacion,
     required this.estado,
     required this.habilitarComentarios,
@@ -66,6 +68,7 @@ class RobleEvaluacionPeriodoDto {
       fechaCreacion: json['fechaCreacion'],
       profesorId: json['profesorId'],
       evaluacionEntrePares: json['evaluacionEntrePares'] ?? true,
+      permitirAutoEvaluacion: json['permitirAutoEvaluacion'] ?? false,
       criteriosEvaluacion: criterios,
       estado: json['estado'] ?? 'pendiente',
       habilitarComentarios: json['habilitarComentarios'] ?? true,
@@ -84,6 +87,7 @@ class RobleEvaluacionPeriodoDto {
       'fechaCreacion': fechaCreacion,
       'profesorId': profesorId,
       'evaluacionEntrePares': evaluacionEntrePares,
+      'permitirAutoEvaluacion': permitirAutoEvaluacion,
       'criteriosEvaluacion': criteriosEvaluacion,
       'estado': estado,
       'habilitarComentarios': habilitarComentarios,
@@ -103,6 +107,7 @@ class RobleEvaluacionPeriodoDto {
       fechaCreacion: entity.fechaCreacion.toIso8601String(),
       profesorId: entity.profesorId,
       evaluacionEntrePares: entity.evaluacionEntrePares,
+      permitirAutoEvaluacion: entity.permitirAutoEvaluacion,
       criteriosEvaluacion: entity.criteriosEvaluacion,
       estado: entity.estado.name,
       habilitarComentarios: entity.habilitarComentarios,
@@ -122,6 +127,7 @@ class RobleEvaluacionPeriodoDto {
       fechaCreacion: DateTime.parse(fechaCreacion),
       profesorId: profesorId,
       evaluacionEntrePares: evaluacionEntrePares,
+      permitirAutoEvaluacion: permitirAutoEvaluacion,
       criteriosEvaluacion: criteriosEvaluacion,
       estado: EstadoEvaluacionPeriodo.values.firstWhere(
         (e) => e.name == estado,

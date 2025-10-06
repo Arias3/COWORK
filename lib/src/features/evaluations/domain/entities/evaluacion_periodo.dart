@@ -10,6 +10,8 @@ class EvaluacionPeriodo {
   final DateTime fechaCreacion;
   final String profesorId; // Profesor que creó la evaluación
   final bool evaluacionEntrePares;
+  final bool
+  permitirAutoEvaluacion; // Permite que los estudiantes se evalúen a sí mismos
   final List<String> criteriosEvaluacion; // Lista de criterios seleccionados
   final EstadoEvaluacionPeriodo estado;
   final bool habilitarComentarios;
@@ -26,6 +28,7 @@ class EvaluacionPeriodo {
     required this.fechaCreacion,
     required this.profesorId,
     this.evaluacionEntrePares = true,
+    this.permitirAutoEvaluacion = false,
     required this.criteriosEvaluacion,
     this.estado = EstadoEvaluacionPeriodo.pendiente,
     this.habilitarComentarios = true,
@@ -43,6 +46,7 @@ class EvaluacionPeriodo {
     DateTime? fechaCreacion,
     String? profesorId,
     bool? evaluacionEntrePares,
+    bool? permitirAutoEvaluacion,
     List<String>? criteriosEvaluacion,
     EstadoEvaluacionPeriodo? estado,
     bool? habilitarComentarios,
@@ -59,6 +63,8 @@ class EvaluacionPeriodo {
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       profesorId: profesorId ?? this.profesorId,
       evaluacionEntrePares: evaluacionEntrePares ?? this.evaluacionEntrePares,
+      permitirAutoEvaluacion:
+          permitirAutoEvaluacion ?? this.permitirAutoEvaluacion,
       criteriosEvaluacion: criteriosEvaluacion ?? this.criteriosEvaluacion,
       estado: estado ?? this.estado,
       habilitarComentarios: habilitarComentarios ?? this.habilitarComentarios,
@@ -78,6 +84,7 @@ class EvaluacionPeriodo {
       'fechaCreacion': fechaCreacion.toIso8601String(),
       'profesorId': profesorId,
       'evaluacionEntrePares': evaluacionEntrePares,
+      'permitirAutoEvaluacion': permitirAutoEvaluacion,
       'criteriosEvaluacion': criteriosEvaluacion,
       'estado': estado.name,
       'habilitarComentarios': habilitarComentarios,
@@ -99,6 +106,7 @@ class EvaluacionPeriodo {
       fechaCreacion: DateTime.parse(json['fechaCreacion']),
       profesorId: json['profesorId'],
       evaluacionEntrePares: json['evaluacionEntrePares'] ?? true,
+      permitirAutoEvaluacion: json['permitirAutoEvaluacion'] ?? false,
       criteriosEvaluacion: List<String>.from(json['criteriosEvaluacion']),
       estado: EstadoEvaluacionPeriodo.values.firstWhere(
         (e) => e.name == json['estado'],

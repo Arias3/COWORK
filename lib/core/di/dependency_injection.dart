@@ -251,7 +251,10 @@ class DependencyInjection {
       permanent: true,
     );
     Get.put<EvaluacionIndividualUseCase>(
-      EvaluacionIndividualUseCase(Get.find<EvaluacionIndividualRepository>()),
+      EvaluacionIndividualUseCase(
+        Get.find<EvaluacionIndividualRepository>(),
+        Get.find<EvaluacionPeriodoRepository>(),
+      ),
       permanent: true,
     );
     Get.put<RobleAuthLoginUseCase>(

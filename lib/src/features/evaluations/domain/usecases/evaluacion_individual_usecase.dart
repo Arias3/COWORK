@@ -1,11 +1,13 @@
 import '../entities/evaluacion_individual.dart';
 import '../entities/criterios_evaluacion.dart';
 import '../repositories/evaluacion_individual_repository.dart';
+import '../repositories/evaluacion_periodo_repository.dart';
 
 class EvaluacionIndividualUseCase {
   final EvaluacionIndividualRepository _repository;
+  final EvaluacionPeriodoRepository _periodoRepository;
 
-  EvaluacionIndividualUseCase(this._repository);
+  EvaluacionIndividualUseCase(this._repository, this._periodoRepository);
 
   Future<List<EvaluacionIndividual>> getEvaluacionesPorPeriodo(
     String evaluacionPeriodoId,
@@ -270,9 +272,18 @@ class EvaluacionIndividualUseCase {
     String evaluadoId,
     String evaluacionPeriodoId,
   ) async {
-    // No puede evaluarse a sí mismo
-    if (evaluadorId == evaluadoId) {
+    // Obtener el período de evaluación para verificar la configuración
+    final periodo = await _periodoRepository.getEvaluacionPeriodoById(
+      evaluacionPeriodoId,
+    );
+    if (periodo == null) {
       return false;
+    }
+
+    // Si el evaluador y evaluado son la misma persona (auto-evaluación)
+    if (evaluadorId == evaluadoId) {
+      // Solo permitir si está habilitada la auto-evaluación
+      return periodo.permitirAutoEvaluacion;
     }
 
     // Verificar si ya existe una evaluación
@@ -331,11 +342,55 @@ class EvaluacionIndividualUseCase {
     final List<EvaluacionIndividual> evaluacionesGeneradas = [];
 
     try {
+      // Obtener el período de evaluación para verificar configuración
+      final periodo = await _periodoRepository.getEvaluacionPeriodoById(
+        evaluacionPeriodoId,
+      );
+      if (periodo == null) {
+        print(
+          '❌ [EVAL-USECASE] Período de evaluación no encontrado: $evaluacionPeriodoId',
+        );
+        return evaluacionesGeneradas;
+      }
+
+      print('🔍 [EVAL-USECASE] Configuración del período:');
+      print('   - Evaluación entre pares: ${periodo.evaluacionEntrePares}');
+      print('   - Permitir auto-evaluación: ${periodo.permitirAutoEvaluacion}');
+
       // Para cada miembro del equipo
       for (final evaluadorId in miembrosEquipo) {
-        // Evalúa a todos los demás miembros (excepto a sí mismo)
+        // Evalúa a todos los miembros según la configuración
         for (final evaluadoId in miembrosEquipo) {
-          if (evaluadorId != evaluadoId) {
+          // Determinar si debe crear esta evaluación
+          bool debeCrearEvaluacion = false;
+
+          if (evaluadorId == evaluadoId) {
+            // Auto-evaluación: solo si está permitida
+            debeCrearEvaluacion = periodo.permitirAutoEvaluacion;
+            if (debeCrearEvaluacion) {
+              print(
+                '✅ [EVAL-USECASE] Auto-evaluación permitida: $evaluadorId → $evaluadoId',
+              );
+            } else {
+              print(
+                '⏭️ [EVAL-USECASE] Auto-evaluación NO permitida: $evaluadorId → $evaluadoId',
+              );
+            }
+          } else {
+            // Evaluación entre pares: solo si está permitida
+            debeCrearEvaluacion = periodo.evaluacionEntrePares;
+            if (debeCrearEvaluacion) {
+              print(
+                '✅ [EVAL-USECASE] Evaluación entre pares permitida: $evaluadorId → $evaluadoId',
+              );
+            } else {
+              print(
+                '⏭️ [EVAL-USECASE] Evaluación entre pares NO permitida: $evaluadorId → $evaluadoId',
+              );
+            }
+          }
+
+          if (debeCrearEvaluacion) {
             // Verificar si ya existe la evaluación
             final evaluacionExistente = await _repository
                 .getEvaluacionEspecifica(
