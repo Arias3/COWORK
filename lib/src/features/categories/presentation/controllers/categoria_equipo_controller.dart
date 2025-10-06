@@ -29,7 +29,8 @@ class CategoriaEquipoController extends GetxController {
   var categoriaSeleccionada = Rxn<CategoriaEquipo>();
 
   // Controladores de formulario
-  final TextEditingController nombreCategoriaController = TextEditingController();
+  final TextEditingController nombreCategoriaController =
+      TextEditingController();
   final TextEditingController nombreEquipoController = TextEditingController();
   var tipoAsignacionSeleccionado = TipoAsignacion.manual.obs;
   var maxEstudiantesPorEquipo = 4.obs;
@@ -67,7 +68,8 @@ class CategoriaEquipoController extends GetxController {
       isLoading.value = true;
       cursoActual.value = curso;
 
-      final categoriasList = await _categoriaEquipoUseCase.getCategoriasPorCurso(curso.id!);
+      final categoriasList = await _categoriaEquipoUseCase
+          .getCategoriasPorCurso(curso.id!);
       categorias.assignAll(categoriasList);
 
       if (categoriasList.isNotEmpty) {
@@ -82,34 +84,44 @@ class CategoriaEquipoController extends GetxController {
 
   void mostrarDialogoCrearCategoria() {
     if (!esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede crear categorías');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede crear categorías',
+      );
       return;
     }
 
     _resetFormularioCategoria();
-    Get.dialog(_buildDialogoCategoria(
-      titulo: 'Crear Categoría',
-      icono: Icons.category,
-      color: Colors.blue,
-      contenido: _buildCrearCategoriaForm(),
-      onConfirmar: _confirmarCrearCategoria,
-    ));
+    Get.dialog(
+      _buildDialogoCategoria(
+        titulo: 'Crear Categoría',
+        icono: Icons.category,
+        color: Colors.blue,
+        contenido: _buildCrearCategoriaForm(),
+        onConfirmar: _confirmarCrearCategoria,
+      ),
+    );
   }
 
   void mostrarDialogoEditarCategoria(CategoriaEquipo categoria) {
     if (!esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede editar categorías');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede editar categorías',
+      );
       return;
     }
 
     _cargarDatosCategoria(categoria);
-    Get.dialog(_buildDialogoCategoria(
-      titulo: 'Editar Categoría',
-      icono: Icons.edit,
-      color: Colors.orange,
-      contenido: _buildEditarCategoriaForm(categoria),
-      onConfirmar: () => _confirmarEditarCategoria(categoria),
-    ));
+    Get.dialog(
+      _buildDialogoCategoria(
+        titulo: 'Editar Categoría',
+        icono: Icons.edit,
+        color: Colors.orange,
+        contenido: _buildEditarCategoriaForm(categoria),
+        onConfirmar: () => _confirmarEditarCategoria(categoria),
+      ),
+    );
   }
 
   void _resetFormularioCategoria() {
@@ -163,7 +175,10 @@ class CategoriaEquipoController extends GetxController {
     return _buildFormularioCategoria(esCreacion: false, categoria: categoria);
   }
 
-  Widget _buildFormularioCategoria({required bool esCreacion, CategoriaEquipo? categoria}) {
+  Widget _buildFormularioCategoria({
+    required bool esCreacion,
+    CategoriaEquipo? categoria,
+  }) {
     return SizedBox(
       width: double.maxFinite,
       child: Column(
@@ -181,9 +196,12 @@ class CategoriaEquipoController extends GetxController {
           ),
           const SizedBox(height: 16),
           if (esCreacion) _buildTipoAsignacionSelector(),
-          if (!esCreacion && categoria != null) _buildInfoTipoAsignacion(categoria),
+          if (!esCreacion && categoria != null)
+            _buildInfoTipoAsignacion(categoria),
           const SizedBox(height: 16),
-          _buildMaxEstudiantesSlider(!esCreacion && categoria?.equiposIds.isNotEmpty == true),
+          _buildMaxEstudiantesSlider(
+            !esCreacion && categoria?.equiposIds.isNotEmpty == true,
+          ),
         ],
       ),
     );
@@ -193,26 +211,33 @@ class CategoriaEquipoController extends GetxController {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Tipo de asignación:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Tipo de asignación:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        Obx(() => Column(
-          children: [
-            RadioListTile<TipoAsignacion>(
-              title: const Text('Manual'),
-              subtitle: const Text('Los estudiantes eligen su equipo'),
-              value: TipoAsignacion.manual,
-              groupValue: tipoAsignacionSeleccionado.value,
-              onChanged: (value) => tipoAsignacionSeleccionado.value = value!,
-            ),
-            RadioListTile<TipoAsignacion>(
-              title: const Text('Aleatoria'),
-              subtitle: const Text('El sistema asigna equipos automáticamente'),
-              value: TipoAsignacion.aleatoria,
-              groupValue: tipoAsignacionSeleccionado.value,
-              onChanged: (value) => tipoAsignacionSeleccionado.value = value!,
-            ),
-          ],
-        )),
+        Obx(
+          () => Column(
+            children: [
+              RadioListTile<TipoAsignacion>(
+                title: const Text('Manual'),
+                subtitle: const Text('Los estudiantes eligen su equipo'),
+                value: TipoAsignacion.manual,
+                groupValue: tipoAsignacionSeleccionado.value,
+                onChanged: (value) => tipoAsignacionSeleccionado.value = value!,
+              ),
+              RadioListTile<TipoAsignacion>(
+                title: const Text('Aleatoria'),
+                subtitle: const Text(
+                  'El sistema asigna equipos automáticamente',
+                ),
+                value: TipoAsignacion.aleatoria,
+                groupValue: tipoAsignacionSeleccionado.value,
+                onChanged: (value) => tipoAsignacionSeleccionado.value = value!,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -244,38 +269,56 @@ class CategoriaEquipoController extends GetxController {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Máximo estudiantes por equipo:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Máximo estudiantes por equipo:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         if (mostrarAdvertencia) ...[
           const SizedBox(height: 4),
           Text(
             'Nota: Reducir el límite podría afectar equipos existentes',
-            style: TextStyle(fontSize: 12, color: Colors.orange[700], fontStyle: FontStyle.italic),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.orange[700],
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
         const SizedBox(height: 8),
-        Obx(() => Row(
-          children: [
-            Expanded(
-              child: Slider(
-                value: maxEstudiantesPorEquipo.value.toDouble(),
-                min: 2, max: 8, divisions: 6,
-                label: maxEstudiantesPorEquipo.value.toString(),
-                onChanged: (value) => maxEstudiantesPorEquipo.value = value.round(),
+        Obx(
+          () => Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: maxEstudiantesPorEquipo.value.toDouble(),
+                  min: 2,
+                  max: 8,
+                  divisions: 6,
+                  label: maxEstudiantesPorEquipo.value.toString(),
+                  onChanged: (value) =>
+                      maxEstudiantesPorEquipo.value = value.round(),
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${maxEstudiantesPorEquipo.value}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
-              child: Text(
-                '${maxEstudiantesPorEquipo.value}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ],
-        )),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -283,7 +326,10 @@ class CategoriaEquipoController extends GetxController {
   Future<void> _confirmarCrearCategoria() async {
     if (!_validarFormularioCategoria()) return;
     if (!esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede crear categorías');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede crear categorías',
+      );
       return;
     }
 
@@ -297,7 +343,10 @@ class CategoriaEquipoController extends GetxController {
 
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
-      _showSuccessSnackbar('Categoría creada', 'La categoría "${nombreCategoriaController.text}" ha sido creada');
+      _showSuccessSnackbar(
+        'Categoría creada',
+        'La categoría "${nombreCategoriaController.text}" ha sido creada',
+      );
     } catch (e) {
       _showErrorSnackbar('Error al crear categoría', e.toString());
     }
@@ -306,11 +355,19 @@ class CategoriaEquipoController extends GetxController {
   Future<void> _confirmarEditarCategoria(CategoriaEquipo categoria) async {
     if (!_validarFormularioCategoria()) return;
     if (!esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede editar categorías');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede editar categorías',
+      );
       return;
     }
 
     try {
+      // ✅ Validar que el ID no sea nulo antes de actualizar
+      if (categoria.id == null) {
+        throw Exception('ID de categoría no válido');
+      }
+
       await _categoriaEquipoUseCase.updateCategoria(
         categoria.id!,
         nombre: nombreCategoriaController.text.trim(),
@@ -319,7 +376,10 @@ class CategoriaEquipoController extends GetxController {
 
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
-      _showSuccessSnackbar('Categoría actualizada', 'Los cambios han sido guardados exitosamente');
+      _showSuccessSnackbar(
+        'Categoría actualizada',
+        'Los cambios han sido guardados exitosamente',
+      );
     } catch (e) {
       _showErrorSnackbar('Error al actualizar categoría', e.toString());
     }
@@ -335,17 +395,23 @@ class CategoriaEquipoController extends GetxController {
 
   Future<void> eliminarCategoria(CategoriaEquipo categoria) async {
     if (!esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede eliminar categorías');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede eliminar categorías',
+      );
       return;
     }
 
-    Get.dialog(_buildDialogoConfirmacion(
-      titulo: 'Confirmar eliminación',
-      mensaje: '¿Estás seguro de eliminar esta categoría?',
-      detalles: _buildDetallesCategoria(categoria),
-      advertencia: 'Se eliminarán todos los equipos asociados. Esta acción no se puede deshacer.',
-      onConfirmar: () => _ejecutarEliminacionCategoria(categoria),
-    ));
+    Get.dialog(
+      _buildDialogoConfirmacion(
+        titulo: 'Confirmar eliminación',
+        mensaje: '¿Estás seguro de eliminar esta categoría?',
+        detalles: _buildDetallesCategoria(categoria),
+        advertencia:
+            'Se eliminarán todos los equipos asociados. Esta acción no se puede deshacer.',
+        onConfirmar: () => _ejecutarEliminacionCategoria(categoria),
+      ),
+    );
   }
 
   Widget _buildDialogoConfirmacion({
@@ -371,13 +437,22 @@ class CategoriaEquipoController extends GetxController {
           const SizedBox(height: 8),
           detalles,
           const SizedBox(height: 8),
-          Text(advertencia, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+          Text(
+            advertencia,
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
       actions: [
         TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
           onPressed: onConfirmar,
           child: const Text('Eliminar'),
         ),
@@ -396,9 +471,18 @@ class CategoriaEquipoController extends GetxController {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(categoria.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text('Tipo: ${categoria.tipoAsignacion.name}', style: TextStyle(color: Colors.grey[600])),
-          Text('Equipos: ${categoria.equiposIds.length}', style: TextStyle(color: Colors.grey[600])),
+          Text(
+            categoria.nombre,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Tipo: ${categoria.tipoAsignacion.name}',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+          Text(
+            'Equipos: ${categoria.equiposIds.length}',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
         ],
       ),
     );
@@ -406,10 +490,18 @@ class CategoriaEquipoController extends GetxController {
 
   Future<void> _ejecutarEliminacionCategoria(CategoriaEquipo categoria) async {
     try {
+      // ✅ Validar que el ID no sea nulo antes de eliminar
+      if (categoria.id == null) {
+        throw Exception('ID de categoría no válido');
+      }
+
       await _categoriaEquipoUseCase.deleteCategoria(categoria.id!);
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
-      _showSuccessSnackbar('Eliminada', 'Categoría "${categoria.nombre}" eliminada');
+      _showSuccessSnackbar(
+        'Eliminada',
+        'Categoría "${categoria.nombre}" eliminada',
+      );
     } catch (e) {
       Get.back();
       _showErrorSnackbar('Error al eliminar', e.toString());
@@ -425,7 +517,15 @@ class CategoriaEquipoController extends GetxController {
 
     try {
       isLoadingEquipos.value = true;
-      final equiposList = await _categoriaEquipoUseCase.getEquiposPorCategoria(categoria.id!);
+
+      // ✅ Validar que el ID no sea nulo antes de obtener equipos
+      if (categoria.id == null) {
+        throw Exception('ID de categoría no válido');
+      }
+
+      final equiposList = await _categoriaEquipoUseCase.getEquiposPorCategoria(
+        categoria.id!,
+      );
       equipos.assignAll(equiposList);
       await _checkMiEquipo();
       _loadEquiposDisponibles();
@@ -443,7 +543,10 @@ class CategoriaEquipoController extends GetxController {
       final userId = _authController.currentUser.value?.id;
       if (userId == null) return;
 
-      final equipo = await _categoriaEquipoUseCase.getEquipoPorEstudiante(userId, categoriaSeleccionada.value!.id!);
+      final equipo = await _categoriaEquipoUseCase.getEquipoPorEstudiante(
+        userId,
+        categoriaSeleccionada.value!.id!,
+      );
       miEquipo.value = equipo;
     } catch (e) {
       print('Error checking mi equipo: $e');
@@ -454,13 +557,22 @@ class CategoriaEquipoController extends GetxController {
     if (categoriaSeleccionada.value == null) return;
 
     equiposDisponibles.assignAll(
-      equipos.where((equipo) => equipo.estudiantesIds.length < categoriaSeleccionada.value!.maxEstudiantesPorEquipo).toList(),
+      equipos
+          .where(
+            (equipo) =>
+                equipo.estudiantesIds.length <
+                categoriaSeleccionada.value!.maxEstudiantesPorEquipo,
+          )
+          .toList(),
     );
   }
 
   Future<void> generarEquiposAleatorios() async {
     if (categoriaSeleccionada.value == null || !esProfesorDelCursoActual) {
-      _showErrorSnackbar('Sin permisos', 'Solo el profesor del curso puede generar equipos');
+      _showErrorSnackbar(
+        'Sin permisos',
+        'Solo el profesor del curso puede generar equipos',
+      );
       return;
     }
 
@@ -471,7 +583,11 @@ class CategoriaEquipoController extends GetxController {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Row(
-        children: [Icon(Icons.shuffle, color: Colors.orange), SizedBox(width: 8), Text('Generar Equipos')],
+        children: [
+          Icon(Icons.shuffle, color: Colors.orange),
+          SizedBox(width: 8),
+          Text('Generar Equipos'),
+        ],
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -488,18 +604,26 @@ class CategoriaEquipoController extends GetxController {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Categoría: ${categoriaSeleccionada.value!.nombre}'),
-                Text('Max por equipo: ${categoriaSeleccionada.value!.maxEstudiantesPorEquipo}'),
+                Text(
+                  'Max por equipo: ${categoriaSeleccionada.value!.maxEstudiantesPorEquipo}',
+                ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          const Text('Se eliminarán los equipos existentes.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w500)),
+          const Text(
+            'Se eliminarán los equipos existentes.',
+            style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
       actions: [
         TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+          ),
           onPressed: _ejecutarGenerarEquipos,
           child: const Text('Generar'),
         ),
@@ -511,9 +635,14 @@ class CategoriaEquipoController extends GetxController {
     try {
       Get.back();
       isLoadingEquipos.value = true;
-      await _categoriaEquipoUseCase.generarEquiposAleatorios(categoriaSeleccionada.value!.id!);
+      await _categoriaEquipoUseCase.generarEquiposAleatorios(
+        categoriaSeleccionada.value!.id!,
+      );
       await selectCategoria(categoriaSeleccionada.value!);
-      _showSuccessSnackbar('Equipos generados', 'Los equipos han sido creados aleatoriamente');
+      _showSuccessSnackbar(
+        'Equipos generados',
+        'Los equipos han sido creados aleatoriamente',
+      );
     } catch (e) {
       _showErrorSnackbar('Error al generar equipos', e.toString());
     } finally {
@@ -537,7 +666,10 @@ class CategoriaEquipoController extends GetxController {
       );
 
       await selectCategoria(categoriaSeleccionada.value!);
-      _showSuccessSnackbar('Equipo creado', 'El equipo "$nombreEquipo" ha sido creado exitosamente');
+      _showSuccessSnackbar(
+        'Equipo creado',
+        'El equipo "$nombreEquipo" ha sido creado exitosamente',
+      );
     } catch (e) {
       _showErrorSnackbar('Error al crear equipo', e.toString());
     }
@@ -551,7 +683,11 @@ class CategoriaEquipoController extends GetxController {
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: [Icon(Icons.group_add, color: Colors.green, size: 28), const SizedBox(width: 8), const Text('Crear Equipo')],
+          children: [
+            Icon(Icons.group_add, color: Colors.green, size: 28),
+            const SizedBox(width: 8),
+            const Text('Crear Equipo'),
+          ],
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -582,13 +718,22 @@ class CategoriaEquipoController extends GetxController {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               Get.back();
-              crearEquipo(nombreEquipoController.text, descripcionController.text);
+              crearEquipo(
+                nombreEquipoController.text,
+                descripcionController.text,
+              );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Crear'),
           ),
         ],
@@ -598,25 +743,31 @@ class CategoriaEquipoController extends GetxController {
 
   // CAMBIO: Método corregido para usar String equipoId
   Future<void> unirseAEquipo(Equipo equipo) async {
-  try {
-    final userId = _authController.currentUser.value?.id;
-    if (userId == null) throw Exception('Usuario no autenticado');
+    try {
+      final userId = _authController.currentUser.value?.id;
+      if (userId == null) throw Exception('Usuario no autenticado');
 
-    if (miEquipo.value != null) {
-      _showErrorSnackbar('Ya tienes un equipo', 'Debes salir de tu equipo actual antes de unirte a otro');
-      return;
+      if (miEquipo.value != null) {
+        _showErrorSnackbar(
+          'Ya tienes un equipo',
+          'Debes salir de tu equipo actual antes de unirte a otro',
+        );
+        return;
+      }
+
+      // CAMBIO: Convertir ID a String
+      final equipoIdString = equipo.id!.toString();
+      await _categoriaEquipoUseCase.unirseAEquipo(userId, equipoIdString);
+
+      await selectCategoria(categoriaSeleccionada.value!);
+      _showSuccessSnackbar(
+        'Te uniste al equipo',
+        'Ahora eres parte de "${equipo.nombre}"',
+      );
+    } catch (e) {
+      _showErrorSnackbar('Error al unirse al equipo', e.toString());
     }
-
-    // CAMBIO: Convertir ID a String
-    final equipoIdString = equipo.id!.toString();
-    await _categoriaEquipoUseCase.unirseAEquipo(userId, equipoIdString);
-    
-    await selectCategoria(categoriaSeleccionada.value!);
-    _showSuccessSnackbar('Te uniste al equipo', 'Ahora eres parte de "${equipo.nombre}"');
-  } catch (e) {
-    _showErrorSnackbar('Error al unirse al equipo', e.toString());
   }
-}
 
   Future<void> salirDeEquipo() async {
     if (miEquipo.value == null || categoriaSeleccionada.value == null) return;
@@ -628,13 +779,20 @@ class CategoriaEquipoController extends GetxController {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Row(
-        children: [Icon(Icons.exit_to_app, color: Colors.red), SizedBox(width: 8), Text('Salir del equipo')],
+        children: [
+          Icon(Icons.exit_to_app, color: Colors.red),
+          SizedBox(width: 8),
+          Text('Salir del equipo'),
+        ],
       ),
       content: Text('¿Salir del equipo "${miEquipo.value!.nombre}"?'),
       actions: [
         TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
           onPressed: _ejecutarSalirEquipo,
           child: const Text('Salir'),
         ),
@@ -647,10 +805,16 @@ class CategoriaEquipoController extends GetxController {
       final userId = _authController.currentUser.value?.id;
       if (userId == null) throw Exception('Usuario no autenticado');
 
-      await _categoriaEquipoUseCase.salirDeEquipo(userId, categoriaSeleccionada.value!.id!);
+      await _categoriaEquipoUseCase.salirDeEquipo(
+        userId,
+        categoriaSeleccionada.value!.id!,
+      );
       Get.back();
       await selectCategoria(categoriaSeleccionada.value!);
-      _showSuccessSnackbar('Saliste del equipo', 'Ya no formas parte del equipo');
+      _showSuccessSnackbar(
+        'Saliste del equipo',
+        'Ya no formas parte del equipo',
+      );
     } catch (e) {
       Get.back();
       _showErrorSnackbar('Error al salir del equipo', e.toString());
@@ -671,19 +835,30 @@ class CategoriaEquipoController extends GetxController {
     }
   }
 
-  Future<void> agregarEstudianteAEquipo(String equipoId, String estudianteId) async {
+  Future<void> agregarEstudianteAEquipo(
+    String equipoId,
+    String estudianteId,
+  ) async {
     try {
-      print('🔍 [CONTROLLER] Agregando estudiante $estudianteId al equipo $equipoId');
-      
+      print(
+        '🔍 [CONTROLLER] Agregando estudiante $estudianteId al equipo $equipoId',
+      );
+
       final equipo = await _getEquipoById(equipoId);
       if (equipo == null) {
         _showErrorSnackbar('Error', 'Equipo no encontrado');
         return;
       }
 
-      await _categoriaEquipoUseCase.agregarEstudianteAEquipoV2(equipo, estudianteId);
-      
-      _showSuccessSnackbar('Estudiante agregado', 'El estudiante ha sido agregado al equipo exitosamente');
+      await _categoriaEquipoUseCase.agregarEstudianteAEquipoV2(
+        equipo,
+        estudianteId,
+      );
+
+      _showSuccessSnackbar(
+        'Estudiante agregado',
+        'El estudiante ha sido agregado al equipo exitosamente',
+      );
 
       if (categoriaSeleccionada.value != null) {
         await selectCategoria(categoriaSeleccionada.value!);
@@ -694,9 +869,14 @@ class CategoriaEquipoController extends GetxController {
     }
   }
 
-  Future<void> removerEstudianteDeEquipo(String equipoId, String estudianteId) async {
+  Future<void> removerEstudianteDeEquipo(
+    String equipoId,
+    String estudianteId,
+  ) async {
     try {
-      print('🔍 [CONTROLLER] Removiendo estudiante $estudianteId del equipo $equipoId');
+      print(
+        '🔍 [CONTROLLER] Removiendo estudiante $estudianteId del equipo $equipoId',
+      );
       isRemovingStudent.value = true;
 
       final equipo = await _getEquipoById(equipoId);
@@ -705,9 +885,15 @@ class CategoriaEquipoController extends GetxController {
         return;
       }
 
-      await _categoriaEquipoUseCase.removerEstudianteDeEquipoV2(equipo, estudianteId);
+      await _categoriaEquipoUseCase.removerEstudianteDeEquipoV2(
+        equipo,
+        estudianteId,
+      );
 
-      _showSuccessSnackbar('Estudiante removido', 'El estudiante ha sido removido del equipo exitosamente');
+      _showSuccessSnackbar(
+        'Estudiante removido',
+        'El estudiante ha sido removido del equipo exitosamente',
+      );
 
       if (categoriaSeleccionada.value != null) {
         await selectCategoria(categoriaSeleccionada.value!);
@@ -724,19 +910,25 @@ class CategoriaEquipoController extends GetxController {
 
   Future<List<Usuario>> getEstudiantesDelCurso() async {
     try {
-      if (cursoActual.value?.id == null) return [];
-      return await _categoriaEquipoUseCase.getEstudiantesDelCurso(cursoActual.value!.id!);
+      final curso = cursoActual.value;
+      if (curso == null) return [];
+      return await _categoriaEquipoUseCase.getEstudiantesDelCurso(curso.id);
     } catch (e) {
       print('❌ [CONTROLLER] Error obteniendo estudiantes del curso: $e');
       return [];
     }
   }
 
-  Future<List<Usuario>> getEstudiantesDisponiblesParaEquipo(String equipoId) async {
+  Future<List<Usuario>> getEstudiantesDisponiblesParaEquipo(
+    String equipoId,
+  ) async {
     try {
-      print('🔍 [CONTROLLER] Obteniendo estudiantes disponibles para equipo: $equipoId');
-      
-      if (cursoActual.value?.id == null || categoriaSeleccionada.value?.id == null) {
+      print(
+        '🔍 [CONTROLLER] Obteniendo estudiantes disponibles para equipo: $equipoId',
+      );
+
+      if (cursoActual.value?.id == null ||
+          categoriaSeleccionada.value?.id == null) {
         print('❌ [CONTROLLER] Curso o categoría no disponible');
         return [];
       }
@@ -748,7 +940,7 @@ class CategoriaEquipoController extends GetxController {
       }
 
       print('✅ [CONTROLLER] Equipo encontrado: ${equipo.nombre}');
-      
+
       return await _categoriaEquipoUseCase.getEstudiantesDisponiblesParaEquipo(
         equipo,
         categoriaSeleccionada.value!.id!,

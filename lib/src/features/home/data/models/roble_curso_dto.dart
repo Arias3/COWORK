@@ -35,9 +35,8 @@ class RobleCursoDto {
       print('🔄 [HYBRID] Convirtiendo ID: $rawId (tipo: ${rawId.runtimeType})');
 
       if (rawId is String && rawId.isNotEmpty) {
-        // Convertir string ID de Roble a número usando hashCode
-        final hashCode = rawId.hashCode.abs();
-        convertedId = hashCode == 0 ? 1 : hashCode;
+        // ✅ SOLUCIONADO: Usar función determinística en lugar de hashCode
+        convertedId = _generateConsistentId(rawId);
         print('✅ [HYBRID] String ID convertido: "$rawId" -> $convertedId');
       } else if (rawId is int && rawId > 0) {
         convertedId = rawId;
@@ -134,5 +133,20 @@ class RobleCursoDto {
         creadoEn,
       ), // ✅ Mismo valor para fechaCreacion
     );
+  }
+
+  /// ✅ MÉTODO AGREGADO: Genera un ID consistente entre plataformas
+  /// En lugar de usar hashCode (que varía entre web/mobile),
+  /// usamos una función determinística basada en los códigos de caracteres
+  static int _generateConsistentId(String input) {
+    if (input.isEmpty) return 1;
+
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      hash = (hash * 31 + input.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+
+    // Asegurar que nunca sea 0
+    return hash == 0 ? 1 : hash;
   }
 }

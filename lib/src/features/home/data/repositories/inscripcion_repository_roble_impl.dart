@@ -75,18 +75,42 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
     try {
       final dto = RobleInscripcionDto.fromEntity(inscripcion);
 
-      print('📝 [ROBLE] Creando inscripción:');
+      print('[ROBLE] Creando inscripcion:');
       print('  - Usuario ID: ${inscripcion.usuarioId}');
       print('  - Curso ID: ${inscripcion.cursoId}');
+      print('  - Fecha: ${inscripcion.fechaInscripcion}');
+      print('  - DTO JSON: ${dto.toJson()}');
 
       final response = await _dataSource.create(tableName, dto.toJson());
-      final nuevoId = response['id'] ?? 0;
+      print('[ROBLE] Respuesta de la API: $response');
+      print('[ROBLE] Tipo de respuesta: ${response.runtimeType}');
 
-      print('✅ [ROBLE] Inscripción creada con ID: $nuevoId');
+      // Extraer ID de la respuesta según la estructura de Roble
+      final idValue =
+          response['id'] ?? response['_id'] ?? response['insertedId'];
+      int nuevoId;
+
+      if (idValue != null) {
+        nuevoId = idValue is int
+            ? idValue
+            : int.tryParse(idValue.toString()) ??
+                  _generateConsistentId(idValue.toString());
+      } else {
+        // Si no hay ID explícito, generar uno consistente basado en los datos
+        final dataForId =
+            '${inscripcion.usuarioId}_${inscripcion.cursoId}_${DateTime.now().millisecondsSinceEpoch}';
+        nuevoId = _generateConsistentId(dataForId);
+        print(
+          '[ROBLE] ID generado automaticamente: $nuevoId para datos: $dataForId',
+        );
+      }
+
+      print('[ROBLE] Inscripcion creada con ID: $nuevoId');
       return nuevoId;
     } catch (e) {
-      print('Error creando inscripción en Roble: $e');
-      throw Exception('No se pudo crear la inscripción: $e');
+      print('[ROBLE] ERROR creando inscripcion: $e');
+      print('[ROBLE] Stack trace: ${StackTrace.current}');
+      throw Exception('No se pudo crear la inscripcion: $e');
     }
   }
 
@@ -112,5 +136,17 @@ class InscripcionRepositoryRobleImpl implements InscripcionRepository {
       print('Error verificando inscripción en Roble: $e');
       return false;
     }
+  }
+
+  // ========================================================================
+  // FUNCIÓN DETERMINÍSTICA PARA IDs CONSISTENTES CROSS-PLATFORM
+  // ========================================================================
+  static int _generateConsistentId(String input) {
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      int char = input.codeUnitAt(i);
+      hash = ((hash << 5) - hash + char) & 0x7FFFFFFF;
+    }
+    return hash == 0 ? 1 : hash; // Evitar 0
   }
 }

@@ -5,7 +5,8 @@ import '../../../src/features/home/domain/entities/inscripcion_entity.dart';
 import '../../../src/features/categories/domain/entities/categoria_equipo_entity.dart';
 import '../../../src/features/categories/domain/entities/equipo_entity.dart';
 import '../../../src/features/categories/domain/entities/tipo_asignacion.dart';
-import '../../../src/features/activities/domain/entities/activity.dart';
+// Activity import removido - migrado a Roble
+// import '../../../src/features/activities/domain/entities/activity.dart';
 
 class HiveHelper {
   static const String usuariosBox = 'usuarios';
@@ -23,7 +24,8 @@ class HiveHelper {
   // Nuevos boxes
   static Box<CategoriaEquipo>? _categoriasEquipoBox;
   static Box<Equipo>? _equiposBox;
-  static Box<Activity>? _activitiesBox;
+  // ⚠️ MIGRADO A ROBLE - Ya no se usa Hive para actividades
+  // static Box<Activity>? _activitiesBox;
 
   // Getters para boxes existentes
   static Box<Usuario> get usuariosBoxInstance => _usuariosBox!;
@@ -34,7 +36,8 @@ class HiveHelper {
   static Box<CategoriaEquipo> get categoriasEquipoBoxInstance =>
       _categoriasEquipoBox!;
   static Box<Equipo> get equiposBoxInstance => _equiposBox!;
-  static Box<Activity> get activitiesBoxInstance => _activitiesBox!;
+  // ⚠️ MIGRADO A ROBLE - Ya no se usa Hive para actividades
+  // static Box<Activity> get activitiesBoxInstance => _activitiesBox!;
 
   static Future<void> initHive() async {
     await Hive.initFlutter();
@@ -48,7 +51,7 @@ class HiveHelper {
     Hive.registerAdapter(CategoriaEquipoAdapter());
     Hive.registerAdapter(EquipoAdapter());
     Hive.registerAdapter(TipoAsignacionAdapter());
-    Hive.registerAdapter(ActivityAdapter());
+    // ActivityAdapter removido - ya no se usa Hive para activities
 
     // Abrir boxes existentes
     _usuariosBox = await Hive.openBox<Usuario>(usuariosBox);
@@ -60,7 +63,18 @@ class HiveHelper {
       categoriasEquipoBox,
     );
     _equiposBox = await Hive.openBox<Equipo>(equiposBox);
-    _activitiesBox = await Hive.openBox<Activity>(activitiesBox);
+
+    // ⚠️ MIGRACIÓN: Intentar limpiar box de actividades obsoleta
+    try {
+      // Eliminar la box antigua de actividades que puede tener datos corruptos
+      await Hive.deleteBoxFromDisk(activitiesBox);
+      print('📋 Box de actividades antigua eliminada exitosamente');
+    } catch (e) {
+      print('⚠️ Error eliminando box de actividades antigua: $e');
+    }
+
+    // Ya no abrimos la box de actividades porque usamos Roble
+    // _activitiesBox = await Hive.openBox<Activity>(activitiesBox);
 
     // Cargar datos iniciales si no existen
     await _loadInitialData();
@@ -213,7 +227,10 @@ class HiveHelper {
       }
     }
 
-    // Cargar datos de prueba para actividades
+    // ⚠️ ACTIVIDADES MIGRADAS A ROBLE ⚠️
+    // Ya no se usa Hive para actividades, ahora se obtienen del servidor Roble
+    // mediante ActivityRepositoryRobleImpl. Esta sección está comentada:
+    /*
     if (activitiesBoxInstance.isEmpty) {
       final activities = [
         Activity(
@@ -251,6 +268,7 @@ class HiveHelper {
         await activitiesBoxInstance.flush();
       }
     }
+    */
 
     // Los equipos se crearán cuando el profesor genere equipos o los estudiantes se unan manualmente
     // Por ahora dejamos la caja de equipos vacía para demostrar la funcionalidad

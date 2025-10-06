@@ -60,15 +60,15 @@ class NewCourseController extends GetxController {
   void onInit() {
     super.onInit();
     print('🚀 NewCourseController iniciado');
-    
-    // Debug del estado inicial de autenticación  
+
+    // Debug del estado inicial de autenticación
     print('🔐 Estado inicial de autenticación:');
     print('currentUser: ${authController.currentUser.value?.nombre}');
     if (authController.currentUser.value != null) {
       print('User ID: ${authController.currentUser.value!.id}');
       print('User Role: ${authController.currentUser.value!.rol}');
     }
-    
+
     cargarEstudiantes();
 
     // Escuchar cambios en la búsqueda
@@ -89,24 +89,39 @@ class NewCourseController extends GetxController {
       final usuarios = await usuarioUseCase.getUsuarios();
       print('👥 Total usuarios: ${usuarios.length}');
 
-      // Filtrar solo estudiantes (excluir profesores)
+      // Obtener el usuario actual
+      final usuarioActual = authController.currentUser.value;
+      print(
+        '👤 Usuario actual: ${usuarioActual?.nombre} (ID: ${usuarioActual?.id})',
+      );
+
+      // Filtrar solo estudiantes (excluir profesores Y al usuario actual)
       todosLosEstudiantes.value = usuarios
-          .where((usuario) => usuario.rol == 'estudiante')
+          .where(
+            (usuario) =>
+                usuario.rol == 'estudiante' &&
+                usuario.id != usuarioActual?.id, // Excluir al usuario actual
+          )
           .toList();
 
-      print('🎓 Estudiantes encontrados: ${todosLosEstudiantes.length}');
+      print(
+        '🎓 Estudiantes encontrados (sin incluir usuario actual): ${todosLosEstudiantes.length}',
+      );
 
       // Inicialmente todos están disponibles
       estudiantesDisponibles.value = List.from(todosLosEstudiantes);
-      
     } catch (e) {
       print('❌ Error cargando estudiantes: $e');
-      Get.snackbar(
-        'Error',
-        'Error al cargar estudiantes: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      // Solo mostrar mensaje de error si es crítico para el usuario
+      if (todosLosEstudiantes.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'No se pudieron cargar los estudiantes. Verifica tu conexión.',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      }
     } finally {
       isLoadingStudents.value = false;
     }
@@ -116,8 +131,11 @@ class NewCourseController extends GetxController {
     if (searchQuery.value.trim().isEmpty) {
       // Sin búsqueda, mostrar todos los disponibles
       estudiantesDisponibles.value = todosLosEstudiantes
-          .where((estudiante) => !estudiantesSeleccionados.any(
-              (selected) => selected.id == estudiante.id))
+          .where(
+            (estudiante) => !estudiantesSeleccionados.any(
+              (selected) => selected.id == estudiante.id,
+            ),
+          )
           .toList();
     } else {
       // Filtrar por nombre o email
@@ -130,7 +148,9 @@ class NewCourseController extends GetxController {
         );
 
         if (!yaSeleccionado) {
-          final coincideNombre = estudiante.nombre.toLowerCase().contains(query);
+          final coincideNombre = estudiante.nombre.toLowerCase().contains(
+            query,
+          );
           final coincideEmail = estudiante.email.toLowerCase().contains(query);
 
           if (coincideNombre || coincideEmail) {
@@ -155,13 +175,8 @@ class NewCourseController extends GetxController {
       estudiantesSeleccionados.add(estudiante);
       filtrarEstudiantes(); // Actualizar lista disponible
 
-      Get.snackbar(
-        'Agregado',
-        'Estudiante "${estudiante.nombre}" agregado al curso',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 1),
-      );
+      // Mensaje removido para mejor fluidez - el cambio visual es suficiente
+      print('✅ Estudiante "${estudiante.nombre}" agregado al curso');
     }
   }
 
@@ -169,26 +184,16 @@ class NewCourseController extends GetxController {
     estudiantesSeleccionados.removeWhere((e) => e.id == estudiante.id);
     filtrarEstudiantes(); // Actualizar lista disponible
 
-    Get.snackbar(
-      'Eliminado',
-      'Estudiante "${estudiante.nombre}" eliminado del curso',
-      backgroundColor: Colors.orange,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 1),
-    );
+    // Mensaje removido para mejor fluidez - el cambio visual es suficiente
+    print('✅ Estudiante "${estudiante.nombre}" eliminado del curso');
   }
 
   void limpiarSeleccion() {
     estudiantesSeleccionados.clear();
     filtrarEstudiantes();
 
-    Get.snackbar(
-      'Limpiado',
-      'Se eliminaron todos los estudiantes seleccionados',
-      backgroundColor: Colors.blue,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 1),
-    );
+    // Mensaje removido para mejor fluidez - acción simple que no necesita confirmación
+    print('✅ Se eliminaron todos los estudiantes seleccionados');
   }
 
   // ========================================================================
@@ -209,38 +214,48 @@ class NewCourseController extends GetxController {
 
   Future<bool> verificarSaludBaseDatos() async {
     print('🏥 === VERIFICACIÓN DE SALUD DE BD ===');
-    
+
     try {
       final usuarios = await usuarioUseCase.getUsuarios();
       print('👥 Total usuarios en BD: ${usuarios.length}');
-      
+
       final currentUser = authController.currentUser.value;
       if (currentUser == null) {
         print('❌ No hay usuario logueado');
         return false;
       }
-      
+
       // Contar usuarios con el mismo email
-      final usuariosConMismoEmail = usuarios.where(
-        (u) => u.email.toLowerCase().trim() == currentUser.email.toLowerCase().trim()
-      ).toList();
-      
-      print('📧 Usuarios con email "${currentUser.email}": ${usuariosConMismoEmail.length}');
-      
+      final usuariosConMismoEmail = usuarios
+          .where(
+            (u) =>
+                u.email.toLowerCase().trim() ==
+                currentUser.email.toLowerCase().trim(),
+          )
+          .toList();
+
+      print(
+        '📧 Usuarios con email "${currentUser.email}": ${usuariosConMismoEmail.length}',
+      );
+
       if (usuariosConMismoEmail.length > 1) {
-        print('⚠️ ADVERTENCIA: ${usuariosConMismoEmail.length} usuarios con el mismo email');
-        
+        print(
+          '⚠️ ADVERTENCIA: ${usuariosConMismoEmail.length} usuarios con el mismo email',
+        );
+
         for (int i = 0; i < usuariosConMismoEmail.length; i++) {
           final u = usuariosConMismoEmail[i];
           print('  ${i + 1}. ID: ${u.id}, Nombre: ${u.nombre}, Rol: ${u.rol}');
         }
-        
+
         // Mostrar diálogo de advertencia
         final continuar = await Get.dialog<bool>(
           AlertDialog(
             title: Text('Usuarios Duplicados Detectados'),
-            content: Text('Se encontraron ${usuariosConMismoEmail.length} usuarios con tu email. '
-                         'Esto puede causar problemas. ¿Deseas continuar?'),
+            content: Text(
+              'Se encontraron ${usuariosConMismoEmail.length} usuarios con tu email. '
+              'Esto puede causar problemas. ¿Deseas continuar?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Get.back(result: false),
@@ -253,19 +268,18 @@ class NewCourseController extends GetxController {
             ],
           ),
         );
-        
+
         return continuar ?? false;
       }
-      
+
       // Verificar que el usuario actual tenga ID válido
       if (currentUser.id == null || currentUser.id! <= 0) {
         print('⚠️ Usuario actual sin ID válido: ${currentUser.id}');
         return false;
       }
-      
+
       print('✅ BD está saludable para crear curso');
       return true;
-      
     } catch (e) {
       print('❌ Error verificando BD: $e');
       return false;
@@ -274,18 +288,18 @@ class NewCourseController extends GetxController {
 
   Future<void> diagnosticarUsuariosDuplicados() async {
     print('\n🔍 === DIAGNÓSTICO DE USUARIOS DUPLICADOS ===');
-    
+
     try {
       final usuarios = await usuarioUseCase.getUsuarios();
       print('📊 Total usuarios en BD: ${usuarios.length}');
-      
+
       // Agrupar por email
       final usuariosPorEmail = <String, List<Usuario>>{};
       for (final usuario in usuarios) {
         final email = usuario.email.toLowerCase().trim();
         usuariosPorEmail.putIfAbsent(email, () => []).add(usuario);
       }
-      
+
       // Mostrar duplicados
       bool hayDuplicados = false;
       usuariosPorEmail.forEach((email, listaUsuarios) {
@@ -294,15 +308,17 @@ class NewCourseController extends GetxController {
           print('⚠️ DUPLICADO - Email: $email');
           for (int i = 0; i < listaUsuarios.length; i++) {
             final u = listaUsuarios[i];
-            print('  ${i + 1}. ID: ${u.id}, Nombre: ${u.nombre}, Rol: ${u.rol}, AuthID: ${u.authUserId}');
+            print(
+              '  ${i + 1}. ID: ${u.id}, Nombre: ${u.nombre}, Rol: ${u.rol}, AuthID: ${u.authUserId}',
+            );
           }
         }
       });
-      
+
       if (!hayDuplicados) {
         print('✅ No se encontraron usuarios duplicados');
       }
-      
+
       // Mostrar usuario actual del controlador
       print('\n👤 Usuario actual en AuthController:');
       final currentUser = authController.currentUser.value;
@@ -315,36 +331,35 @@ class NewCourseController extends GetxController {
       } else {
         print('  - No hay usuario actual');
       }
-      
     } catch (e) {
       print('❌ Error en diagnóstico: $e');
     }
-    
+
     print('=== FIN DIAGNÓSTICO ===\n');
   }
 
   Future<void> limpiarUsuariosDuplicados() async {
     print('🧹 === LIMPIANDO USUARIOS DUPLICADOS ===');
-    
+
     try {
       final usuarios = await usuarioUseCase.getUsuarios();
       final usuariosPorEmail = <String, List<Usuario>>{};
-      
+
       // Agrupar por email
       for (final usuario in usuarios) {
         final email = usuario.email.toLowerCase().trim();
         usuariosPorEmail.putIfAbsent(email, () => []).add(usuario);
       }
-      
+
       // Eliminar duplicados (mantener el que tenga ID más reciente)
       int eliminados = 0;
       for (final entry in usuariosPorEmail.entries) {
         final listaUsuarios = entry.value;
-        
+
         if (listaUsuarios.length > 1) {
           // Ordenar por ID (mantener el más reciente)
           listaUsuarios.sort((a, b) => (b.id ?? 0).compareTo(a.id ?? 0));
-          
+
           // Eliminar todos excepto el primero
           for (int i = 1; i < listaUsuarios.length; i++) {
             final usuarioAEliminar = listaUsuarios[i];
@@ -353,7 +368,9 @@ class NewCourseController extends GetxController {
                 final usuarioRepo = Get.find<UsuarioRepository>();
                 await usuarioRepo.deleteUsuario(usuarioAEliminar.id!);
                 eliminados++;
-                print('🗑️ Eliminado: ${usuarioAEliminar.nombre} (ID: ${usuarioAEliminar.id})');
+                print(
+                  '🗑️ Eliminado: ${usuarioAEliminar.nombre} (ID: ${usuarioAEliminar.id})',
+                );
               } catch (e) {
                 print('❌ Error eliminando usuario ${usuarioAEliminar.id}: $e');
               }
@@ -361,16 +378,15 @@ class NewCourseController extends GetxController {
           }
         }
       }
-      
+
       print('✅ Limpieza completada. Usuarios eliminados: $eliminados');
-      
+
       // Recargar estudiantes después de la limpieza
       await cargarEstudiantes();
-      
     } catch (e) {
       print('❌ Error en limpieza: $e');
     }
-    
+
     print('=== FIN LIMPIEZA ===\n');
   }
 
@@ -380,7 +396,7 @@ class NewCourseController extends GetxController {
 
   Future<bool> crearCurso() async {
     print('🔐 === INICIANDO CREACIÓN DE CURSO ===');
-    
+
     // PRIMERA VERIFICACIÓN: Salud de BD
     if (!await verificarSaludBaseDatos()) {
       print('❌ Verificación de BD falló - Abortando creación');
@@ -392,7 +408,7 @@ class NewCourseController extends GetxController {
       );
       return false;
     }
-    
+
     // Validaciones del formulario
     if (nombreCurso.value.trim().isEmpty) {
       Get.snackbar(
@@ -426,7 +442,7 @@ class NewCourseController extends GetxController {
 
       if (userId == null) {
         Get.snackbar(
-          'Error de Usuario', 
+          'Error de Usuario',
           'No se pudo verificar tu perfil de profesor. Contacta al administrador.',
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -439,7 +455,9 @@ class NewCourseController extends GetxController {
 
       // PASO 2: Crear el curso
       final totalEstudiantes = estudiantesSeleccionados.length;
-      final estudiantesNombres = estudiantesSeleccionados.map((e) => e.nombre).toList();
+      final estudiantesNombres = estudiantesSeleccionados
+          .map((e) => e.nombre)
+          .toList();
 
       print('📚 Creando curso:');
       print('  - Nombre: ${nombreCurso.value.trim()}');
@@ -472,9 +490,14 @@ class NewCourseController extends GetxController {
 
       _limpiarFormulario();
 
+      // Mensaje único y completo al final
+      final estudiantesText = totalEstudiantes > 0
+          ? " con $totalEstudiantes estudiante(s) inscritos"
+          : "";
+
       Get.snackbar(
-        'Curso Creado',
-        'Curso "${nombreCurso.value}" creado exitosamente con código "${codigoRegistro.value}" y $totalEstudiantes estudiante(s).',
+        '¡Curso Creado Exitosamente!',
+        'Curso "${nombreCurso.value}" creado con código "${codigoRegistro.value}"$estudiantesText.',
         backgroundColor: Colors.green,
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
@@ -483,7 +506,7 @@ class NewCourseController extends GetxController {
       return true;
     } catch (e) {
       print('❌ Error completo en crearCurso: $e');
-      
+
       Get.snackbar(
         'Error',
         'Error al crear curso: ${e.toString()}',
@@ -504,34 +527,36 @@ class NewCourseController extends GetxController {
 
   Future<int?> _garantizarUsuarioConId() async {
     print('🔍 === GARANTIZANDO USUARIO CON ID ===');
-    
+
     final currentUser = authController.currentUser.value;
     if (currentUser == null) {
       print('❌ No hay usuario logueado');
       return null;
     }
-    
+
     print('👤 Usuario actual: ${currentUser.nombre} (${currentUser.email})');
     print('💳 ID actual: ${currentUser.id}');
-    
+
     // PASO 1: Si ya tiene un ID válido, usarlo directamente
     if (currentUser.id != null && currentUser.id! > 0) {
       print('✅ Usuario ya tiene ID válido: ${currentUser.id}');
       return currentUser.id!;
     }
-    
+
     print('⚠️ Usuario sin ID válido - Buscando en BD...');
-    
+
     try {
       final usuarioRepo = Get.find<UsuarioRepository>();
-      
+
       // PASO 2: Buscar usuario existente por email (MÁS CONFIABLE)
       Usuario? usuarioExistente;
       try {
-        usuarioExistente = await usuarioRepo.getUsuarioByEmail(currentUser.email.toLowerCase().trim());
+        usuarioExistente = await usuarioRepo.getUsuarioByEmail(
+          currentUser.email.toLowerCase().trim(),
+        );
         if (usuarioExistente?.id != null && usuarioExistente!.id! > 0) {
           print('✅ Encontrado por email con ID: ${usuarioExistente.id}');
-          
+
           // Actualizar el usuario en el controlador auth
           authController.currentUser.value = usuarioExistente;
           return usuarioExistente.id!;
@@ -539,18 +564,21 @@ class NewCourseController extends GetxController {
       } catch (e) {
         print('⚠️ Error buscando por email: $e');
       }
-      
+
       // PASO 3: Buscar por authUserId como fallback
       if (usuarioExistente == null && currentUser.authUserId != null) {
         try {
           final todosUsuarios = await usuarioRepo.getUsuarios();
           usuarioExistente = todosUsuarios.firstWhereOrNull(
-            (u) => u.authUserId == currentUser.authUserId && u.id != null && u.id! > 0,
+            (u) =>
+                u.authUserId == currentUser.authUserId &&
+                u.id != null &&
+                u.id! > 0,
           );
-          
+
           if (usuarioExistente != null) {
             print('✅ Encontrado por authUserId con ID: ${usuarioExistente.id}');
-            
+
             // Actualizar el usuario en el controlador auth
             authController.currentUser.value = usuarioExistente;
             return usuarioExistente.id!;
@@ -559,11 +587,11 @@ class NewCourseController extends GetxController {
           print('⚠️ Error buscando por authUserId: $e');
         }
       }
-      
+
       // PASO 4: SOLO crear si NO existe y es profesor
       if (usuarioExistente == null) {
         print('❌ Usuario NO encontrado en BD');
-        
+
         // Verificar que sea profesor antes de crear
         if (currentUser.rol != 'profesor') {
           print('❌ Usuario no es profesor, no se puede crear curso');
@@ -575,63 +603,59 @@ class NewCourseController extends GetxController {
           );
           return null;
         }
-        
+
         print('🆕 Creando nuevo usuario profesor...');
-        
+
         // VERIFICACIÓN FINAL antes de crear (prevenir duplicados)
-        final verificacionFinal = await usuarioRepo.getUsuarioByEmail(currentUser.email.toLowerCase().trim());
-        if (verificacionFinal != null && verificacionFinal.id != null && verificacionFinal.id! > 0) {
+        final verificacionFinal = await usuarioRepo.getUsuarioByEmail(
+          currentUser.email.toLowerCase().trim(),
+        );
+        if (verificacionFinal != null &&
+            verificacionFinal.id != null &&
+            verificacionFinal.id! > 0) {
           print('⚠️ PREVENCIÓN: Usuario encontrado en verificación final');
           authController.currentUser.value = verificacionFinal;
           return verificacionFinal.id!;
         }
-        
+
         try {
           final nuevoId = await usuarioRepo.createUsuario(currentUser);
-          
+
           if (nuevoId != null && nuevoId > 0) {
             currentUser.id = nuevoId;
             authController.currentUser.value = currentUser;
-            
+
             print('✅ Usuario creado exitosamente con ID: $nuevoId');
-            
-            Get.snackbar(
-              'Usuario Creado',
-              'Tu perfil de profesor ha sido creado correctamente.',
-              backgroundColor: Colors.green,
-              colorText: Colors.white,
-            );
-            
+
+            // Solo mensaje si es realmente necesario para el usuario
+            // Get.snackbar removido para evitar saturación de mensajes
+
             return nuevoId;
           } else {
             print('❌ Repository devolvió ID inválido: $nuevoId');
-            
+
             // Generar ID temporal como último recurso
             final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
             final finalId = tempId == 0 ? 1 : tempId;
             currentUser.id = finalId;
-            
+
             print('🔧 Usando ID temporal: $finalId');
-            
-            Get.snackbar(
-              'Usuario Temporal',
-              'Se creó un perfil temporal. ID: $finalId',
-              backgroundColor: Colors.orange,
-              colorText: Colors.white,
-            );
-            
+
+            // Mensaje removido - solo log para debug
+            // Get.snackbar removido para evitar saturación
+
             return finalId;
           }
         } catch (e) {
           print('❌ Error creando usuario: $e');
-          
+
           // Último recurso: ID temporal
           final tempId = DateTime.now().millisecondsSinceEpoch % 0x7FFFFFFF;
           final finalId = tempId == 0 ? 1 : tempId;
           currentUser.id = finalId;
-          
+
           print('🔧 Fallback: ID temporal: $finalId');
-          
+
           Get.snackbar(
             'Error al Crear Usuario',
             'Se usará un perfil temporal. Error: ${e.toString()}',
@@ -639,16 +663,15 @@ class NewCourseController extends GetxController {
             colorText: Colors.white,
             duration: Duration(seconds: 5),
           );
-          
+
           return finalId;
         }
       }
-      
     } catch (e) {
       print('❌ Error general en garantizar usuario: $e');
       return null;
     }
-    
+
     print('❌ No se pudo garantizar usuario con ID');
     return null;
   }
@@ -659,82 +682,76 @@ class NewCourseController extends GetxController {
 
   // REEMPLAZA el método _inscribirEstudiantesAutomaticamente en NewCourseController
 
-Future<void> _inscribirEstudiantesAutomaticamente(int cursoId) async {
-  if (estudiantesSeleccionados.isEmpty) {
-    print('📝 No hay estudiantes para inscribir');
-    return;
-  }
-  
-  try {
-    print('👥 Inscribiendo ${estudiantesSeleccionados.length} estudiantes...');
-    
-    // OPCIÓN 1: Usar el código que ya tenemos en lugar de buscar el curso
-    final codigoCurso = codigoRegistro.value.trim();
-    
-    if (codigoCurso.isEmpty) {
-      print('❌ No hay código de registro disponible');
-      throw Exception('Código de registro no disponible');
+  Future<void> _inscribirEstudiantesAutomaticamente(int cursoId) async {
+    if (estudiantesSeleccionados.isEmpty) {
+      print('📝 No hay estudiantes para inscribir');
+      return;
     }
-    
-    print('📋 Usando código de registro: $codigoCurso');
 
-    int exitosos = 0;
-    int fallidos = 0;
+    try {
+      print(
+        '👥 Inscribiendo ${estudiantesSeleccionados.length} estudiantes...',
+      );
 
-    // Inscribir cada estudiante seleccionado
-    for (final estudiante in estudiantesSeleccionados) {
-      if (estudiante.id != null) {
-        try {
-          print('🔄 Inscribiendo a ${estudiante.nombre} (ID: ${estudiante.id}) en curso $codigoCurso');
-          
-          await cursoUseCase.inscribirseEnCurso(
-            estudiante.id!,
-            codigoCurso,
-          );
-          exitosos++;
-          print('✅ ${estudiante.nombre} inscrito correctamente');
-        } catch (e) {
-          fallidos++;
-          print('❌ Error inscribiendo a ${estudiante.nombre}: $e');
-        }
-      } else {
-        fallidos++;
-        print('❌ ${estudiante.nombre} no tiene ID válido');
+      // OPCIÓN 1: Usar el código que ya tenemos en lugar de buscar el curso
+      final codigoCurso = codigoRegistro.value.trim();
+
+      if (codigoCurso.isEmpty) {
+        print('❌ No hay código de registro disponible');
+        throw Exception('Código de registro no disponible');
       }
-    }
 
-    print('📊 Inscripciones: $exitosos exitosas, $fallidos fallidas');
+      print('📋 Usando código de registro: $codigoCurso');
 
-    if (fallidos > 0) {
+      int exitosos = 0;
+      int fallidos = 0;
+
+      // Inscribir cada estudiante seleccionado
+      for (final estudiante in estudiantesSeleccionados) {
+        if (estudiante.id != null) {
+          try {
+            print(
+              '🔄 Inscribiendo a ${estudiante.nombre} (ID: ${estudiante.id}) en curso $codigoCurso',
+            );
+
+            await cursoUseCase.inscribirseEnCurso(estudiante.id!, codigoCurso);
+            exitosos++;
+            print('✅ ${estudiante.nombre} inscrito correctamente');
+          } catch (e) {
+            fallidos++;
+            print('❌ Error inscribiendo a ${estudiante.nombre}: $e');
+          }
+        } else {
+          fallidos++;
+          print('❌ ${estudiante.nombre} no tiene ID válido');
+        }
+      }
+
+      print('📊 Inscripciones: $exitosos exitosas, $fallidos fallidas');
+
+      if (fallidos > 0) {
+        Get.snackbar(
+          'Inscripciones Parciales',
+          '$exitosos estudiantes inscritos, $fallidos fallaron. Revisa manualmente.',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: Duration(seconds: 4),
+        );
+      } else if (exitosos > 0) {
+        print('✅ Todos los estudiantes inscritos correctamente');
+        // Mensaje simplificado y combinado con el mensaje principal del curso
+      }
+    } catch (e) {
+      print('⚠️ Error en inscripciones automáticas: $e');
       Get.snackbar(
-        'Inscripciones Parciales',
-        '$exitosos estudiantes inscritos, $fallidos fallaron. Revisa manualmente.',
+        'Error en Inscripciones',
+        'El curso se creó correctamente pero las inscripciones fallaron. Puedes inscribir a los estudiantes manualmente usando el código: ${codigoRegistro.value}',
         backgroundColor: Colors.orange,
         colorText: Colors.white,
-        duration: Duration(seconds: 4),
-      );
-    } else if (exitosos > 0) {
-      print('✅ Todos los estudiantes inscritos correctamente');
-      Get.snackbar(
-        'Inscripciones Exitosas',
-        'Todos los $exitosos estudiantes fueron inscritos correctamente.',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 6),
       );
     }
-
-  } catch (e) {
-    print('⚠️ Error en inscripciones automáticas: $e');
-    Get.snackbar(
-      'Error en Inscripciones',
-      'El curso se creó correctamente pero las inscripciones fallaron. Puedes inscribir a los estudiantes manualmente usando el código: ${codigoRegistro.value}',
-      backgroundColor: Colors.orange,
-      colorText: Colors.white,
-      duration: Duration(seconds: 6),
-    );
   }
-}
 
   // ========================================================================
   // MÉTODO PARA LIMPIAR FORMULARIO
@@ -854,7 +871,9 @@ Future<void> _inscribirEstudiantesAutomaticamente(int cursoId) async {
     print('\n🔍 === DEBUG BÚSQUEDA ===');
     print('searchQuery.value: "${searchQuery.value}"');
     print('searchQuery.value.length: ${searchQuery.value.length}');
-    print('searchQuery.value.trim().isEmpty: ${searchQuery.value.trim().isEmpty}');
+    print(
+      'searchQuery.value.trim().isEmpty: ${searchQuery.value.trim().isEmpty}',
+    );
     print('estudiantesDisponibles.length: ${estudiantesDisponibles.length}');
     print('=== FIN DEBUG BÚSQUEDA ===\n');
   }

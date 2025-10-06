@@ -26,12 +26,9 @@ class EnrollCourseController extends GetxController {
       final todosCursos = await cursoUseCase.getCursos();
       cursos.assignAll(todosCursos);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al cargar cursos: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      // Solo mostrar error si es crítico - no cargar cursos no impide usar la app
+      print('❌ Error cargando cursos: $e');
+      // Mensaje removido para evitar saturación
     } finally {
       isLoading.value = false;
     }
@@ -49,29 +46,34 @@ class EnrollCourseController extends GetxController {
       try {
         final userId = authController.currentUser.value?.id;
         if (userId == null) {
+          // Error crítico - mostrar mensaje
           Get.snackbar(
-            'Error',
-            'Usuario no autenticado',
+            'Error de Autenticación',
+            'Debes iniciar sesión para inscribirte',
             backgroundColor: Colors.red,
             colorText: Colors.white,
+            duration: const Duration(seconds: 3),
           );
           return;
         }
 
         await cursoUseCase.inscribirseEnCurso(userId, curso.codigoRegistro);
 
+        // Mensaje único y claro para inscripción exitosa
         Get.snackbar(
-          'Éxito',
-          'Te has inscrito correctamente al curso "${curso.nombre}"',
+          '¡Inscrito al Curso!',
+          'Te has inscrito a "${curso.nombre}" exitosamente',
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          duration: const Duration(seconds: 2),
         );
       } catch (e) {
         Get.snackbar(
-          'Error',
-          'Error al inscribirse: ${e.toString()}',
+          'Error de Inscripción',
+          'No se pudo completar la inscripción al curso',
           backgroundColor: Colors.red,
           colorText: Colors.white,
+          duration: const Duration(seconds: 3),
         );
       }
     }

@@ -111,76 +111,78 @@ class CategoriasEquiposPage extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(isManual ? Icons.person_add : Icons.shuffle, color: color),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        categoria.nombre,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () => Get.to(() => ActivityPage(categoria: categoria)),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isManual ? Icons.person_add : Icons.shuffle,
+                    color: color,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          categoria.nombre,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        Text(
+                          '${categoria.tipoAsignacion.name.toUpperCase()} - ${categoria.equiposIds.length} equipos',
+                          style: TextStyle(color: color, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) =>
+                        _handleCategoriaAction(value, categoria, controller),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'editar',
+                        child: Text('Editar'),
                       ),
-                      Text(
-                        '${categoria.tipoAsignacion.name.toUpperCase()} - ${categoria.equiposIds.length} equipos',
-                        style: TextStyle(color: color, fontSize: 12),
+                      const PopupMenuItem(
+                        value: 'eliminar',
+                        child: Text('Eliminar'),
                       ),
                     ],
                   ),
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (value) =>
-                      _handleCategoriaAction(value, categoria, controller),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'equipos',
-                      child: Text('Ver equipos'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Máximo ${categoria.maxEstudiantesPorEquipo} estudiantes por equipo',
+              ),
+              if (!isManual) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      controller.selectCategoria(categoria);
+                      controller.generarEquiposAleatorios();
+                    },
+                    icon: const Icon(Icons.shuffle),
+                    label: const Text('Generar Equipos'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
                     ),
-                    const PopupMenuItem(
-                      value: 'actividades',
-                      child: Text('Ver actividades'),
-                    ),
-                    const PopupMenuItem(value: 'editar', child: Text('Editar')),
-                    const PopupMenuItem(
-                      value: 'eliminar',
-                      child: Text('Eliminar'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Máximo ${categoria.maxEstudiantesPorEquipo} estudiantes por equipo',
-            ),
-            if (!isManual) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    controller.selectCategoria(categoria);
-                    controller.generarEquiposAleatorios();
-                  },
-                  icon: const Icon(Icons.shuffle),
-                  label: const Text('Generar Equipos'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -192,13 +194,6 @@ class CategoriasEquiposPage extends StatelessWidget {
     CategoriaEquipoController controller,
   ) {
     switch (action) {
-      case 'equipos':
-        controller.selectCategoria(categoria);
-        DefaultTabController.of(Get.context!).animateTo(1);
-        break;
-      case 'actividades':
-        Get.to(() => ActivityPage(categoria: categoria));
-        break;
       case 'editar':
         controller.mostrarDialogoEditarCategoria(categoria);
         break;
@@ -490,19 +485,45 @@ class CategoriasEquiposPage extends StatelessWidget {
 
         final todosEstudiantes = snapshot.data ?? [];
 
+        // 🔍 DEBUG: Logs para identificar el problema
+        print('🔍 [UI] Equipo: ${equipo.nombre}');
+        print('🔍 [UI] IDs de estudiantes en equipo: ${equipo.estudiantesIds}');
+        print(
+          '🔍 [UI] Total estudiantes del curso: ${todosEstudiantes.length}',
+        );
+        for (var est in todosEstudiantes) {
+          print('🔍 [UI] Estudiante disponible: ${est.nombre} (ID: ${est.id})');
+        }
+
         return Wrap(
           spacing: 8,
           runSpacing: 4,
           children: equipo.estudiantesIds.map((studentId) {
+            print('🔍 [UI] Buscando estudiante con ID: $studentId');
+
             final estudiante = todosEstudiantes.firstWhere(
-              (est) => est.id == studentId,
-              orElse: () => Usuario(
-                id: studentId,
-                nombre: 'Usuario $studentId',
-                email: '',
-                password: '',
-                rol: 'estudiante',
-              ),
+              (est) {
+                print(
+                  '🔍 [UI] Comparando: estudiante.id=${est.id} con studentId=$studentId',
+                );
+                return est.id == studentId;
+              },
+              orElse: () {
+                print(
+                  '❌ [UI] No encontrado! Usando fallback para ID: $studentId',
+                );
+                return Usuario(
+                  id: studentId,
+                  nombre: 'Usuario $studentId',
+                  email: '',
+                  password: '',
+                  rol: 'estudiante',
+                );
+              },
+            );
+
+            print(
+              '🔍 [UI] Estudiante final: ${estudiante.nombre} (ID: ${estudiante.id})',
             );
 
             return Container(
@@ -1232,13 +1253,8 @@ class CategoriasEquiposPage extends StatelessWidget {
   ) {
     // Verificar si ya hay una operación en curso
     if (controller.isRemovingStudent.value) {
-      Get.snackbar(
-        'Espera',
-        'Ya hay una operación de remoción en curso. Por favor espera.',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      // Eliminar mensaje innecesario - la UI ya muestra el loading
+      print('⚠️ Operación de remoción ya en curso');
       return;
     }
 
@@ -1289,13 +1305,8 @@ class CategoriasEquiposPage extends StatelessWidget {
                 int.parse(estudianteId),
               )) {
                 // El estudiante ya no está en el equipo
-                Get.snackbar(
-                  'Información',
-                  'El estudiante ya fue removido del equipo',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
-                  duration: const Duration(seconds: 2),
-                );
+                print('ℹ️ Estudiante ya removido del equipo');
+                // Mensaje eliminado - no es crítico para el usuario
                 return;
               }
 

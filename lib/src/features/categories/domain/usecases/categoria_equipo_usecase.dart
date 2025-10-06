@@ -71,7 +71,9 @@ class CategoriaEquipoUseCase {
   }
 
   Future<void> deleteCategoria(int id) async {
+    // Eliminar equipos asociados
     await _equipoRepository.deleteEquiposPorCategoria(id);
+    print('✅ [CATEGORIA] Equipos asociados eliminados exitosamente');
     await _categoriaRepository.deleteCategoria(id);
   }
 
@@ -100,6 +102,7 @@ class CategoriaEquipoUseCase {
 
     // Limpiar equipos existentes
     await _equipoRepository.deleteEquiposPorCategoria(categoriaId);
+    print('✅ [CATEGORIA] Equipos anteriores eliminados exitosamente');
 
     // Mezclar estudiantes aleatoriamente
     estudiantesIds.shuffle(Random());
@@ -133,11 +136,14 @@ class CategoriaEquipoUseCase {
     // NOTA: Esto podría necesitar ajuste si equiposIds en CategoriaEquipo es List<int>
     categoria.equiposGenerados = true;
     await _categoriaRepository.updateCategoria(categoria);
+    print('✅ [CATEGORIA] Marcada como equipos generados');
   }
 
   // CAMBIO: Usar String para equipoId
   Future<void> unirseAEquipo(int estudianteId, String equipoId) async {
-    final equipo = await _equipoRepository.getEquipoByStringId(equipoId); // CAMBIO: nuevo método
+    final equipo = await _equipoRepository.getEquipoByStringId(
+      equipoId,
+    ); // CAMBIO: nuevo método
     if (equipo == null) throw Exception('Equipo no encontrado');
 
     final categoria = await _categoriaRepository.getCategoriaById(
@@ -194,24 +200,26 @@ class CategoriaEquipoUseCase {
 
   // CAMBIO: Retornar String en lugar de int
   Future<String> crearEquipo({
-  required String nombre,
-  required int categoriaId,
-  List<int> estudiantesIds = const [],
-  String? color,
-}) async {
-  if (nombre.trim().isEmpty) {
-    throw Exception('El nombre del equipo es obligatorio');
+    required String nombre,
+    required int categoriaId,
+    List<int> estudiantesIds = const [],
+    String? color,
+  }) async {
+    if (nombre.trim().isEmpty) {
+      throw Exception('El nombre del equipo es obligatorio');
+    }
+
+    final equipo = Equipo(
+      nombre: nombre.trim(),
+      categoriaId: categoriaId,
+      estudiantesIds: estudiantesIds,
+      color: color ?? _generarColorAleatorio(),
+    );
+
+    return await _equipoRepository.createEquipo(
+      equipo,
+    ); // CORRECTO: retorna String
   }
-
-  final equipo = Equipo(
-    nombre: nombre.trim(),
-    categoriaId: categoriaId,
-    estudiantesIds: estudiantesIds,
-    color: color ?? _generarColorAleatorio(),
-  );
-
-  return await _equipoRepository.createEquipo(equipo); // CORRECTO: retorna String
-}
 
   // ===================== GESTIÓN DE ESTUDIANTES =====================
 
@@ -219,12 +227,12 @@ class CategoriaEquipoUseCase {
   Future<List<Usuario>> getEstudiantesDelCurso(int cursoId) async {
     try {
       print('🔍 [USECASE] Obteniendo estudiantes del curso: $cursoId');
-      
+
       final inscripciones = await _inscripcionRepository
           .getInscripcionesPorCurso(cursoId);
-      
+
       print('🔍 [USECASE] Inscripciones encontradas: ${inscripciones.length}');
-      
+
       final estudiantesIds = inscripciones.map((i) => i.usuarioId).toList();
       print('🔍 [USECASE] IDs de estudiantes: $estudiantesIds');
 
@@ -241,12 +249,16 @@ class CategoriaEquipoUseCase {
           print('🔍 [USECASE] Buscando usuario con ID: $id');
           final usuario = await _usuarioRepository.getUsuarioById(id);
           if (usuario != null) {
-            print('🔍 [USECASE] Usuario encontrado: ${usuario.nombre} (${usuario.rol})');
+            print(
+              '🔍 [USECASE] Usuario encontrado: ${usuario.nombre} (${usuario.rol})',
+            );
             if (usuario.rol == 'estudiante') {
               estudiantes.add(usuario);
               print('✅ [USECASE] Estudiante agregado: ${usuario.nombre}');
             } else {
-              print('⚠️ [USECASE] Usuario no es estudiante: ${usuario.nombre} (${usuario.rol})');
+              print(
+                '⚠️ [USECASE] Usuario no es estudiante: ${usuario.nombre} (${usuario.rol})',
+              );
             }
           } else {
             print('❌ [USECASE] Usuario no encontrado para ID: $id');
@@ -270,48 +282,66 @@ class CategoriaEquipoUseCase {
     int categoriaId,
   ) async {
     try {
-      print('🔍 [USECASE] Obteniendo estudiantes disponibles para equipo: ${equipo.nombre} en categoría: ${equipo.categoriaId}');
-      
-      final categoria = await _categoriaRepository.getCategoriaById(equipo.categoriaId);
+      print(
+        '🔍 [USECASE] Obteniendo estudiantes disponibles para equipo: ${equipo.nombre} en categoría: ${equipo.categoriaId}',
+      );
+
+      final categoria = await _categoriaRepository.getCategoriaById(
+        equipo.categoriaId,
+      );
       if (categoria == null) {
         print('❌ [USECASE] Categoría no encontrada: ${equipo.categoriaId}');
         return [];
       }
 
-      print('🔍 [USECASE] Categoría encontrada: ${categoria.nombre} (Curso: ${categoria.cursoId})');
+      print(
+        '🔍 [USECASE] Categoría encontrada: ${categoria.nombre} (Curso: ${categoria.cursoId})',
+      );
 
       // Obtener todos los estudiantes inscritos en el curso
       final todosEstudiantes = await getEstudiantesDelCurso(categoria.cursoId);
       print('🔍 [USECASE] Estudiantes del curso: ${todosEstudiantes.length}');
 
       if (todosEstudiantes.isEmpty) {
-        print('⚠️ [USECASE] No hay estudiantes inscritos en el curso ${categoria.cursoId}');
+        print(
+          '⚠️ [USECASE] No hay estudiantes inscritos en el curso ${categoria.cursoId}',
+        );
         return [];
       }
 
       // Obtener todos los equipos de esta categoría
-      final equipos = await _equipoRepository.getEquiposPorCategoria(equipo.categoriaId);
+      final equipos = await _equipoRepository.getEquiposPorCategoria(
+        equipo.categoriaId,
+      );
       print('🔍 [USECASE] Equipos en categoría: ${equipos.length}');
 
       // Recopilar IDs de estudiantes que ya están en equipos
       final estudiantesEnEquipos = <int>{};
       for (final equipoItem in equipos) {
-        print('🔍 [USECASE] Equipo ${equipoItem.nombre} tiene estudiantes: ${equipoItem.estudiantesIds}');
+        print(
+          '🔍 [USECASE] Equipo ${equipoItem.nombre} tiene estudiantes: ${equipoItem.estudiantesIds}',
+        );
         estudiantesEnEquipos.addAll(equipoItem.estudiantesIds);
       }
 
-      print('🔍 [USECASE] Estudiantes ya asignados a equipos: $estudiantesEnEquipos');
+      print(
+        '🔍 [USECASE] Estudiantes ya asignados a equipos: $estudiantesEnEquipos',
+      );
 
       // Filtrar estudiantes disponibles (no están en ningún equipo de esta categoría)
       final disponibles = todosEstudiantes.where((estudiante) {
         final estaDisponible = !estudiantesEnEquipos.contains(estudiante.id);
-        print('🔍 [USECASE] ${estudiante.nombre} (ID: ${estudiante.id}) - Disponible: $estaDisponible');
+        print(
+          '🔍 [USECASE] ${estudiante.nombre} (ID: ${estudiante.id}) - Disponible: $estaDisponible',
+        );
         return estaDisponible;
       }).toList();
 
       print('✅ [USECASE] Estudiantes disponibles: ${disponibles.length}');
       for (var estudiante in disponibles) {
-        print('✅ [USECASE] Disponible: ${estudiante.nombre} (ID: ${estudiante.id})');
+        print(
+          '✅ [USECASE] Disponible: ${estudiante.nombre} (ID: ${estudiante.id})',
+        );
       }
 
       return disponibles;
@@ -327,7 +357,9 @@ class CategoriaEquipoUseCase {
     String estudianteId,
   ) async {
     try {
-      final categoria = await _categoriaRepository.getCategoriaById(equipo.categoriaId);
+      final categoria = await _categoriaRepository.getCategoriaById(
+        equipo.categoriaId,
+      );
       if (categoria == null) throw Exception('Categoría no encontrada');
 
       final studentIdInt = int.parse(estudianteId);
@@ -348,7 +380,9 @@ class CategoriaEquipoUseCase {
         categoria.id!,
       );
       if (equipoActual != null) {
-        throw Exception('El estudiante ya está en otro equipo de esta categoría');
+        throw Exception(
+          'El estudiante ya está en otro equipo de esta categoría',
+        );
       }
 
       // Agregar estudiante al equipo
@@ -366,7 +400,7 @@ class CategoriaEquipoUseCase {
   ) async {
     try {
       final studentIdInt = int.parse(estudianteId);
-      
+
       // Remover estudiante del equipo
       equipo.estudiantesIds = equipo.estudiantesIds
           .where((id) => id != studentIdInt)
@@ -382,7 +416,9 @@ class CategoriaEquipoUseCase {
   Future<Equipo?> getEquipoById(String equipoId) async {
     try {
       print('🔍 [USECASE] Buscando equipo con ID string: $equipoId');
-      return await _equipoRepository.getEquipoByStringId(equipoId); // CAMBIO: usar método específico
+      return await _equipoRepository.getEquipoByStringId(
+        equipoId,
+      ); // CAMBIO: usar método específico
     } catch (e) {
       print('❌ [USECASE] Error obteniendo equipo por ID: $e');
       return null;

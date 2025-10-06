@@ -25,11 +25,11 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.activity?.name ?? '');
+    nameController = TextEditingController(text: widget.activity?.nombre ?? '');
     descController = TextEditingController(
-      text: widget.activity?.description ?? '',
+      text: widget.activity?.descripcion ?? '',
     );
-    deliveryDate = widget.activity?.deliveryDate ?? DateTime.now();
+    deliveryDate = widget.activity?.fechaEntrega ?? DateTime.now();
   }
 
   @override
@@ -64,13 +64,12 @@ class _ActivityFormPageState extends State<ActivityFormPage> {
         );
         Get.snackbar("Éxito", "Actividad creada correctamente");
       } else {
-        final updated = widget.activity!.copyWith(
-          categoryId: widget.activity!.categoryId,
-          name: nameController.text.trim(),
-          description: descController.text.trim(),
-          deliveryDate: deliveryDate ?? widget.activity!.deliveryDate,
+        await activityController.updateActivity(
+          widget.activity!,
+          nombre: nameController.text.trim(),
+          descripcion: descController.text.trim(),
+          fechaEntrega: deliveryDate ?? widget.activity!.fechaEntrega,
         );
-        await activityController.updateActivity(updated);
         Get.snackbar("Éxito", "Actividad actualizada correctamente");
       }
 

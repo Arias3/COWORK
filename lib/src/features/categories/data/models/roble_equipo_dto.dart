@@ -20,22 +20,25 @@ class RobleEquipoDto {
   });
 
   Map<String, dynamic> toJson() => {
-  'nombre': nombre,
-  'categoria_id': categoriaId,
-  'estudiantes_ids': estudiantesIds.isEmpty ? '' : estudiantesIds.join(','), // String vacío si está vacío
-  'creado_en': creadoEn,
-  'descripcion': descripcion,
-  'color': color,
-};
+    'nombre': nombre,
+    'categoria_id': categoriaId,
+    'estudiantes_ids': estudiantesIds.isEmpty
+        ? ''
+        : estudiantesIds.join(','), // String vacío si está vacío
+    'creado_en': creadoEn,
+    'descripcion':
+        descripcion ?? '', // ✅ CORRECCIÓN: Enviar string vacío en lugar de null
+    'color': color,
+  };
 
   factory RobleEquipoDto.fromJson(Map<String, dynamic> json) {
     try {
       print('🔍 [EQUIPO DTO] Parseando equipo desde JSON: $json');
-      
+
       // ✅ MANEJO SEGURO DEL ID
       final rawId = json['_id'] ?? json['id'];
       final idString = rawId?.toString();
-      
+
       // ✅ MANEJO SEGURO DE CATEGORIA_ID
       final rawCategoriaId = json['categoria_id'];
       int categoriaId;
@@ -47,7 +50,7 @@ class RobleEquipoDto {
         categoriaId = 0;
         print('⚠️ [EQUIPO DTO] categoria_id no válido: $rawCategoriaId');
       }
-      
+
       // ✅ MANEJO SEGURO DE ESTUDIANTES_IDS
       List<int> estudiantesIds = [];
       final rawEstudiantesIds = json['estudiantes_ids'];
@@ -63,7 +66,7 @@ class RobleEquipoDto {
           estudiantesIds = [];
         }
       }
-      
+
       // ✅ MANEJO SEGURO DE FECHA
       String creadoEn;
       final rawFecha = json['creado_en'];
@@ -73,7 +76,7 @@ class RobleEquipoDto {
         creadoEn = DateTime.now().toIso8601String();
         print('⚠️ [EQUIPO DTO] Fecha no válida, usando actual: $creadoEn');
       }
-      
+
       final dto = RobleEquipoDto(
         id: idString,
         nombre: json['nombre']?.toString() ?? '',
@@ -83,10 +86,11 @@ class RobleEquipoDto {
         descripcion: json['descripcion']?.toString(),
         color: json['color']?.toString() ?? '#DDA0DD',
       );
-      
-      print('✅ [EQUIPO DTO] Equipo parseado exitosamente: ${dto.nombre} (ID: ${dto.id})');
+
+      print(
+        '✅ [EQUIPO DTO] Equipo parseado exitosamente: ${dto.nombre} (ID: ${dto.id})',
+      );
       return dto;
-      
     } catch (e) {
       print('❌ [EQUIPO DTO] Error parseando equipo: $e');
       print('❌ [EQUIPO DTO] JSON problemático: $json');
@@ -102,20 +106,22 @@ class RobleEquipoDto {
       estudiantesIds: equipo.estudiantesIds,
       creadoEn: equipo.creadoEn.toIso8601String(),
       descripcion: equipo.descripcion,
-      color: equipo.color ?? '#DDA0DD', // ✅ FIX: Provide default value for nullable color
+      color:
+          equipo.color ??
+          '#DDA0DD', // ✅ FIX: Provide default value for nullable color
     );
   }
 
   Equipo toEntity() {
     try {
-      // ✅ CONVERTIR STRING ID A INT (usando hashCode como en cursos)
+      // ✅ CONVERTIR STRING ID A INT (usando función determinística)
       int? entityId;
       if (id != null && id!.isNotEmpty) {
-        final hashCode = id!.hashCode;
-        entityId = hashCode.abs() % 0x7FFFFFFF;
+        // ✅ SOLUCIONADO: Usar función determinística en lugar de hashCode.abs()
+        entityId = _generateConsistentId(id!);
         if (entityId == 0) entityId = 1;
       }
-      
+
       final entity = Equipo(
         id: entityId,
         nombre: nombre,
@@ -125,13 +131,26 @@ class RobleEquipoDto {
         descripcion: descripcion,
         color: color,
       );
-      
-      print('✅ [EQUIPO DTO] Entidad creada: ${entity.nombre} (ID: ${entity.id})');
+
+      print(
+        '✅ [EQUIPO DTO] Entidad creada: ${entity.nombre} (ID: ${entity.id})',
+      );
       return entity;
-      
     } catch (e) {
       print('❌ [EQUIPO DTO] Error creando entidad: $e');
       rethrow;
     }
+  }
+
+  // ========================================================================
+  // FUNCIÓN DETERMINÍSTICA PARA IDs CONSISTENTES CROSS-PLATFORM
+  // ========================================================================
+  static int _generateConsistentId(String input) {
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      int char = input.codeUnitAt(i);
+      hash = ((hash << 5) - hash + char) & 0x7FFFFFFF;
+    }
+    return hash == 0 ? 1 : hash; // Evitar 0
   }
 }

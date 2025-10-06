@@ -141,21 +141,22 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
                 Get.back();
                 await refreshData();
 
+                // Mensaje simplificado solo para confirmación de eliminación
                 Get.snackbar(
-                  'Eliminado',
+                  '¡Curso Eliminado!',
                   'Curso "${curso.nombre}" eliminado correctamente',
                   backgroundColor: Colors.red,
                   colorText: Colors.white,
-                  icon: const Icon(Icons.delete, color: Colors.white),
-                  duration: const Duration(seconds: 3),
+                  duration: const Duration(seconds: 2),
                 );
               } catch (e) {
                 Get.back();
                 Get.snackbar(
-                  'Error',
-                  'Error al eliminar curso: ${e.toString()}',
+                  'Error al Eliminar',
+                  'No se pudo eliminar el curso. Inténtalo de nuevo.',
                   backgroundColor: Colors.red,
                   colorText: Colors.white,
+                  duration: const Duration(seconds: 3),
                 );
               }
             },
@@ -179,18 +180,22 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       await cursoUseCase.inscribirseEnCurso(userId, codigoRegistro);
       await refreshData();
 
+      // Mensaje optimizado para inscripción exitosa
       Get.snackbar(
-        'Éxito',
-        'Te has inscrito correctamente al curso',
+        '¡Inscripción Exitosa!',
+        'Te has inscrito al curso correctamente',
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        duration: const Duration(seconds: 2),
       );
     } catch (e) {
+      // Solo mostrar mensaje de error si es crítico
       Get.snackbar(
-        'Error',
-        e.toString(),
+        'Error de Inscripción',
+        'No se pudo completar la inscripción. Verifica el código.',
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -261,11 +266,22 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         return [];
       }
 
-      print('✅ Curso encontrado: ${curso.nombre} (Código: ${curso.codigoRegistro})');
+      print(
+        '✅ Curso encontrado: ${curso.nombre} (Código: ${curso.codigoRegistro})',
+      );
 
       // 2. Obtener inscripciones del curso usando el método que existe
-      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(cursoId);
+      final inscripciones = await cursoUseCase.getInscripcionesPorCurso(
+        cursoId,
+      );
       print('📋 Inscripciones encontradas: ${inscripciones.length}');
+
+      // ✅ DEBUG: Mostrar detalles de inscripciones
+      for (var inscripcion in inscripciones) {
+        print(
+          '📝 Inscripción: Usuario ID=${inscripcion.usuarioId}, Curso ID=${inscripcion.cursoId}',
+        );
+      }
 
       if (inscripciones.isEmpty) {
         print('❌ No hay inscripciones para el curso $cursoId');
@@ -276,21 +292,32 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       final todosUsuarios = await usuarioUseCase.getUsuarios();
       print('👥 Total usuarios en sistema: ${todosUsuarios.length}');
 
+      // ✅ DEBUG: Mostrar algunos usuarios disponibles
+      print('📋 Primeros 5 usuarios del sistema:');
+      for (int i = 0; i < todosUsuarios.length && i < 5; i++) {
+        final u = todosUsuarios[i];
+        print('  - ${u.nombre}: ID=${u.id}, Email=${u.email}');
+      }
+
       // 4. Filtrar solo los usuarios que están inscritos en este curso
       final estudiantesInscritos = <Usuario>[];
       for (var inscripcion in inscripciones) {
         print('🔍 Buscando usuario con ID: ${inscripcion.usuarioId}');
-        
+
         final usuario = todosUsuarios.firstWhereOrNull(
           (u) => u.id == inscripcion.usuarioId,
         );
-        
+
         if (usuario != null) {
           estudiantesInscritos.add(usuario);
-          print('✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})');
+          print(
+            '✅ Estudiante encontrado: ${usuario.nombre} (${usuario.email})',
+          );
         } else {
-          print('⚠️ Usuario con ID ${inscripcion.usuarioId} no encontrado en la lista de usuarios');
-          
+          print(
+            '⚠️ Usuario con ID ${inscripcion.usuarioId} no encontrado en la lista de usuarios',
+          );
+
           // Debug: mostrar algunos usuarios para comparar IDs
           if (todosUsuarios.isNotEmpty) {
             print('📋 Primeros usuarios disponibles:');
@@ -302,7 +329,9 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         }
       }
 
-      print('🎓 Total estudiantes reales encontrados: ${estudiantesInscritos.length}');
+      print(
+        '🎓 Total estudiantes reales encontrados: ${estudiantesInscritos.length}',
+      );
       return estudiantesInscritos;
     } catch (e) {
       print('❌ Error obteniendo estudiantes reales: $e');

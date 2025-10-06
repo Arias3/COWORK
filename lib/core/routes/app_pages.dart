@@ -7,9 +7,11 @@ import '../../src/features/auth/presentation/pages/register_page.dart';
 import '../../src/features/home/presentation/pages/home_page.dart';
 import '../../src/features/home/presentation/pages/new_course_page.dart';
 import '../../src/features/home/presentation/pages/enroll_course_page.dart';
+import '../../src/features/home/presentation/pages/estudiante_curso_detalle_page.dart';
 import '../../src/features/categories/presentation/pages/categorias_equipos_page.dart';
 import '../../src/features/activities/presentation/pages/activities_page.dart';
 import '../../src/features/activities/presentation/pages/activityFormPage.dart';
+import '../../src/features/activities/presentation/pages/activity_assignment_page.dart';
 
 // Import entities
 import '../../src/features/home/domain/entities/curso_entity.dart';
@@ -38,6 +40,15 @@ class AppPages {
     GetPage(name: AppRoutes.home, page: () => const HomePage()),
     GetPage(name: AppRoutes.newCourse, page: () => NewCoursePage()),
     GetPage(name: AppRoutes.enrollCourse, page: () => const EnrollCoursePage()),
+    GetPage(
+      name: AppRoutes.estudianteCursoDetalle,
+      page: () {
+        final CursoDomain curso = Get.arguments;
+        return EstudianteCursoDetallePage(curso: curso);
+      },
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+    ),
 
     // Categories pages
     GetPage(
@@ -72,6 +83,16 @@ class AppPages {
       transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 300),
     ),
+
+    GetPage(
+      name: AppRoutes.assignActivity,
+      page: () {
+        final Activity activity = Get.arguments as Activity;
+        return ActivityAssignmentPage(activity: activity);
+      },
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+    ),
   ];
 
   /// Helper method to build ActivityFormPage with proper argument handling
@@ -83,7 +104,7 @@ class AppPages {
       if (args is List && args.isNotEmpty) {
         final activity = args[0] as Activity;
         return ActivityFormPage(
-          categoryId: activity.categoryId,
+          categoryId: activity.categoriaId,
           activity: activity,
         );
       }

@@ -573,13 +573,9 @@ class EnrollCoursePage extends StatelessWidget {
                     onPressed: () {
                       Get.back(); // Cerrar diálogo
                       Get.back(); // Volver a home
-                      Get.snackbar(
-                        'Compartir',
-                        'Funcionalidad de compartir próximamente',
-                        backgroundColor: Colors.green,
-                        colorText: Colors.white,
-                        icon: const Icon(Icons.share, color: Colors.white),
-                      );
+                      // Eliminar mensaje innecesario de funcionalidad no implementada
+                      print('📤 Compartir - funcionalidad próximamente');
+                      // TODO: Implementar funcionalidad de compartir
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,

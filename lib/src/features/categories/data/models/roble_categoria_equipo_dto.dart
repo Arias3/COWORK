@@ -30,20 +30,23 @@ class RobleCategoriaEquipoDto {
     'curso_id': cursoId,
     'tipo_asignacion': tipoAsignacion,
     'max_estudiantes_por_equipo': maxEstudiantesPorEquipo,
-    'equipos_ids': equiposIds.join(','), // Mantener como string separado por comas
+    'equipos_ids': equiposIds.join(
+      ',',
+    ), // Mantener como string separado por comas
     'creado_en': creadoEn,
     'equipos_generados': equiposGenerados,
-    'descripcion': descripcion,
+    'descripcion':
+        descripcion ?? '', // ✅ CORRECIÓN: Enviar string vacío en lugar de null
   };
 
   factory RobleCategoriaEquipoDto.fromJson(Map<String, dynamic> json) {
     try {
       print('🔍 [DTO] Parseando categoría desde JSON: $json');
-      
+
       // ✅ MANEJO SEGURO DEL ID
       final rawId = json['_id'] ?? json['id'];
       final idString = rawId?.toString();
-      
+
       // ✅ MANEJO SEGURO DE CURSO_ID
       final rawCursoId = json['curso_id'];
       int cursoId;
@@ -55,7 +58,7 @@ class RobleCategoriaEquipoDto {
         cursoId = 0;
         print('⚠️ [DTO] curso_id no válido: $rawCursoId');
       }
-      
+
       // ✅ MANEJO SEGURO DE MAX_ESTUDIANTES_POR_EQUIPO
       final rawMaxEstudiantes = json['max_estudiantes_por_equipo'];
       int maxEstudiantes;
@@ -65,9 +68,11 @@ class RobleCategoriaEquipoDto {
         maxEstudiantes = int.tryParse(rawMaxEstudiantes) ?? 4;
       } else {
         maxEstudiantes = 4;
-        print('⚠️ [DTO] max_estudiantes_por_equipo no válido: $rawMaxEstudiantes, usando 4');
+        print(
+          '⚠️ [DTO] max_estudiantes_por_equipo no válido: $rawMaxEstudiantes, usando 4',
+        );
       }
-      
+
       // ✅ MANEJO SEGURO DE EQUIPOS_IDS
       List<int> equiposIds = [];
       final rawEquiposIds = json['equipos_ids'];
@@ -83,7 +88,7 @@ class RobleCategoriaEquipoDto {
           equiposIds = [];
         }
       }
-      
+
       // ✅ MANEJO SEGURO DE EQUIPOS_GENERADOS
       final rawEquiposGenerados = json['equipos_generados'];
       bool equiposGenerados;
@@ -96,7 +101,7 @@ class RobleCategoriaEquipoDto {
       } else {
         equiposGenerados = false;
       }
-      
+
       // ✅ MANEJO SEGURO DE FECHA
       String creadoEn;
       final rawFecha = json['creado_en'];
@@ -106,7 +111,7 @@ class RobleCategoriaEquipoDto {
         creadoEn = DateTime.now().toIso8601String();
         print('⚠️ [DTO] Fecha no válida, usando actual: $creadoEn');
       }
-      
+
       final dto = RobleCategoriaEquipoDto(
         id: idString,
         nombre: json['nombre']?.toString() ?? '',
@@ -118,10 +123,11 @@ class RobleCategoriaEquipoDto {
         equiposGenerados: equiposGenerados,
         descripcion: json['descripcion']?.toString(),
       );
-      
-      print('✅ [DTO] Categoría parseada exitosamente: ${dto.nombre} (ID: ${dto.id})');
+
+      print(
+        '✅ [DTO] Categoría parseada exitosamente: ${dto.nombre} (ID: ${dto.id})',
+      );
       return dto;
-      
     } catch (e) {
       print('❌ [DTO] Error parseando categoría: $e');
       print('❌ [DTO] JSON problemático: $json');
@@ -145,15 +151,14 @@ class RobleCategoriaEquipoDto {
 
   CategoriaEquipo toEntity() {
     try {
-      // ✅ CONVERTIR STRING ID A INT (usando hashCode como en cursos)
+      // ✅ CONVERTIR STRING ID A INT (usando función determinística)
       int? entityId;
       if (id != null && id!.isNotEmpty) {
-        // Usar el mismo método que usas para los cursos
-        final hashCode = id!.hashCode;
-        entityId = hashCode.abs() % 0x7FFFFFFF;
+        // ✅ SOLUCIONADO: Usar función determinística en lugar de hashCode.abs()
+        entityId = _generateConsistentId(id!);
         if (entityId == 0) entityId = 1;
       }
-      
+
       final entity = CategoriaEquipo(
         id: entityId,
         nombre: nombre,
@@ -168,13 +173,24 @@ class RobleCategoriaEquipoDto {
         equiposGenerados: equiposGenerados,
         descripcion: descripcion,
       );
-      
+
       print('✅ [DTO] Entidad creada: ${entity.nombre} (ID: ${entity.id})');
       return entity;
-      
     } catch (e) {
       print('❌ [DTO] Error creando entidad: $e');
       rethrow;
     }
+  }
+
+  // ========================================================================
+  // FUNCIÓN DETERMINÍSTICA PARA IDs CONSISTENTES CROSS-PLATFORM
+  // ========================================================================
+  static int _generateConsistentId(String input) {
+    int hash = 0;
+    for (int i = 0; i < input.length; i++) {
+      int char = input.codeUnitAt(i);
+      hash = ((hash << 5) - hash + char) & 0x7FFFFFFF;
+    }
+    return hash == 0 ? 1 : hash; // Evitar 0
   }
 }

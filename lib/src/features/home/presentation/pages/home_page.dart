@@ -91,16 +91,9 @@ class HomePage extends StatelessWidget {
                 onSelected: (value) async {
                   switch (value) {
                     case 'notifications':
-                      Get.snackbar(
-                        'Notificaciones',
-                        'No tienes notificaciones nuevas',
-                        backgroundColor: Colors.blue,
-                        colorText: Colors.white,
-                        icon: const Icon(
-                          Icons.notifications,
-                          color: Colors.white,
-                        ),
-                      );
+                      // Eliminar mensaje innecesario - solo navegación silenciosa
+                      print('📱 Notificaciones consultadas');
+                      // TODO: Implementar navegación a página de notificaciones
                       break;
                     case 'refresh':
                       controller.refreshData();
@@ -168,16 +161,9 @@ class HomePage extends StatelessWidget {
                       color: Colors.grey,
                     ),
                     onPressed: () {
-                      Get.snackbar(
-                        'Notificaciones',
-                        'No tienes notificaciones nuevas',
-                        backgroundColor: Colors.blue,
-                        colorText: Colors.white,
-                        icon: const Icon(
-                          Icons.notifications,
-                          color: Colors.white,
-                        ),
-                      );
+                      // Eliminar mensaje redundante - solo navegación silenciosa
+                      print('📱 Notificaciones consultadas');
+                      // TODO: Implementar navegación a página de notificaciones
                     },
                   ),
                   Obx(
@@ -399,30 +385,32 @@ class HomePage extends StatelessWidget {
   }
 
   Future<int> _getTotalEstudiantesReales(HomeController controller) async {
-  int total = 0;
-  
-  print('📊 === CALCULANDO TOTAL ESTUDIANTES ===');
-  print('Cursos dictados: ${controller.dictados.length}');
-  
-  for (var curso in controller.dictados) {
-    print('🔍 Procesando curso: ${curso.nombre}');
-    print('  - ID: ${curso.id}');
-    print('  - Código: ${curso.codigoRegistro}');
-    
-    if (curso.id != null && curso.id! > 0) {
-      final numEstudiantes = await controller.getNumeroEstudiantesReales(curso.id!);
-      print('  - Estudiantes encontrados: $numEstudiantes');
-      total += numEstudiantes;
-    } else {
-      print('  ❌ ID inválido, saltando curso');
+    int total = 0;
+
+    print('📊 === CALCULANDO TOTAL ESTUDIANTES ===');
+    print('Cursos dictados: ${controller.dictados.length}');
+
+    for (var curso in controller.dictados) {
+      print('🔍 Procesando curso: ${curso.nombre}');
+      print('  - ID: ${curso.id}');
+      print('  - Código: ${curso.codigoRegistro}');
+
+      if (curso.id != null && curso.id! > 0) {
+        final numEstudiantes = await controller.getNumeroEstudiantesReales(
+          curso.id!,
+        );
+        print('  - Estudiantes encontrados: $numEstudiantes');
+        total += numEstudiantes;
+      } else {
+        print('  ❌ ID inválido, saltando curso');
+      }
     }
+
+    print('📈 Total estudiantes calculado: $total');
+    print('=== FIN CÁLCULO ===\n');
+
+    return total;
   }
-  
-  print('📈 Total estudiantes calculado: $total');
-  print('=== FIN CÁLCULO ===\n');
-  
-  return total;
-}
 
   Widget _buildStatCard({
     required String title,
@@ -735,9 +723,8 @@ class HomePage extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: isDictado
-            ? 0.56
-            : 0.75, // Ajuste final para eliminar esos 2.3px
+        childAspectRatio:
+            0.75, // Ahora mismo aspecto para ambos tipos de cursos
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -756,13 +743,12 @@ class HomePage extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        if (!isDictado) {
-          Get.snackbar(
-            'Información',
-            'Funcionalidad de detalles próximamente',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-          );
+        if (isDictado) {
+          // Navegar a gestión de equipos para cursos dictados
+          controller.abrirGestionEquipos(curso);
+        } else {
+          // Navegar a la vista de detalles del estudiante
+          Get.toNamed('/estudiante-curso-detalle', arguments: curso);
         }
       },
       child: Container(
@@ -895,6 +881,31 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Agregar indicador de gestión de equipos para cursos dictados
+                    if (isDictado)
+                      Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.groups,
+                            size: 16,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -940,31 +951,38 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             FutureBuilder<int>(
-  future: isDictado
-      ? () {
-          print('🔍 DEBUG CURSO CARD: ${curso.nombre}');
-          print('  - ID: ${curso.id}');
-          
-          if (curso.id == null || curso.id! <= 0) {
-            print('  ❌ ID inválido, retornando 0');
-            return Future.value(0);
-          }
-          
-          print('  ✅ ID válido, obteniendo estudiantes...');
-          return controller.getNumeroEstudiantesReales(curso.id!);
-        }()
-      : Future.value(1),
-  builder: (context, snapshot) {
-    return Text(
-      '${snapshot.data ?? '...'}',
-      style: TextStyle(
-        fontSize: 12,
-        color: Colors.grey[600],
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  },
-)
+                              future: isDictado
+                                  ? () {
+                                      print(
+                                        '🔍 DEBUG CURSO CARD: ${curso.nombre}',
+                                      );
+                                      print('  - ID: ${curso.id}');
+
+                                      if (curso.id == null || curso.id! <= 0) {
+                                        print('  ❌ ID inválido, retornando 0');
+                                        return Future.value(0);
+                                      }
+
+                                      print(
+                                        '  ✅ ID válido, obteniendo estudiantes...',
+                                      );
+                                      return controller
+                                          .getNumeroEstudiantesReales(
+                                            curso.id!,
+                                          );
+                                    }()
+                                  : Future.value(1),
+                              builder: (context, snapshot) {
+                                return Text(
+                                  '${snapshot.data ?? '...'}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         ),
                         // Categorías
@@ -991,48 +1009,6 @@ class HomePage extends StatelessWidget {
                           ),
                       ],
                     ),
-                    // Botón de gestionar equipos (solo para dictados)
-                    if (isDictado) ...[
-                      const SizedBox(
-                        height: 6,
-                      ), // Reducido a 6 para eliminar overflow final
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              controller.abrirGestionEquipos(curso),
-                          icon: const Icon(
-                            Icons.groups,
-                            size: 14,
-                          ), // Reducido de 16 a 14
-                          label: const Text(
-                            'Gestionar Equipos',
-                            style: TextStyle(
-                              fontSize: 11,
-                            ), // Reducido de 12 a 11
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            side: const BorderSide(
-                              color: Colors.blue,
-                              width: 1,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical:
-                                  4, // Reducido a 4 para eliminar overflow final
-                              horizontal: 10, // Reducido de 12 a 10
-                            ),
-                            minimumSize: const Size(
-                              0,
-                              24,
-                            ), // Altura mínima aún más pequeña
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

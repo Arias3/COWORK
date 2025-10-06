@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class RobleAuthLogoutDatasource {
   final String baseUrl =
-      'https://roble-api.openlab.uninorte.edu.co/auth/coworkapp_f869bff78c';
+      'https://roble-api.openlab.uninorte.edu.co/auth/coworkapp_dd7a0b82de';
 
   Future<bool> logout({required String accessToken}) async {
     final url = Uri.parse('$baseUrl/logout');

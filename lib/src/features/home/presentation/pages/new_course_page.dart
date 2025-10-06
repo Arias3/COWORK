@@ -988,14 +988,9 @@ class NewCoursePage extends StatelessWidget {
                     onPressed: () {
                       Get.back(); // Cerrar diálogo
                       Get.back(); // Volver a home
-                      // Aquí podrías agregar lógica para compartir
-                      Get.snackbar(
-                        'Compartir',
-                        'Funcionalidad de compartir próximamente',
-                        backgroundColor: Colors.blue,
-                        colorText: Colors.white,
-                        icon: const Icon(Icons.share, color: Colors.white),
-                      );
+                      // Eliminar mensaje innecesario - funcionalidad no implementada
+                      print('📤 Compartir curso - funcionalidad próximamente');
+                      // TODO: Implementar funcionalidad de compartir curso
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,

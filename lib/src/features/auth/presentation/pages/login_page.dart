@@ -195,13 +195,11 @@ class LoginPage extends StatelessWidget {
                     // Olvidaste contraseña
                     GestureDetector(
                       onTap: () {
-                        Get.snackbar(
-                          'Información',
-                          'Funcionalidad de recuperación en desarrollo',
-                          backgroundColor: Colors.orange,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.TOP,
+                        // Eliminar mensaje innecesario - funcionalidad no implementada
+                        print(
+                          '🔄 Recuperación de contraseña - funcionalidad en desarrollo',
                         );
+                        // TODO: Implementar recuperación de contraseña
                       },
                       child: const Text(
                         '¿Olvidaste tu contraseña?',
@@ -232,12 +230,14 @@ class LoginPage extends StatelessWidget {
                                 final password = contrasenaController.text
                                     .trim();
                                 if (email.isEmpty || password.isEmpty) {
+                                  // Mantener solo validación crítica
                                   Get.snackbar(
-                                    "Error",
-                                    "Por favor completa todos los campos",
-                                    backgroundColor: Colors.red,
+                                    "Campos Requeridos",
+                                    "Completa tu email y contraseña",
+                                    backgroundColor: Colors.orange,
                                     colorText: Colors.white,
                                     snackPosition: SnackPosition.TOP,
+                                    duration: const Duration(seconds: 2),
                                   );
                                   return;
                                 }
@@ -251,21 +251,18 @@ class LoginPage extends StatelessWidget {
                                     );
 
                                 if (success) {
-                                  Get.snackbar(
-                                    "Éxito",
-                                    "Ingreso exitoso",
-                                    backgroundColor: Colors.green,
-                                    colorText: Colors.white,
-                                    snackPosition: SnackPosition.TOP,
-                                  );
+                                  // Mensaje de éxito eliminado - navegación es suficiente feedback
+                                  print('✅ Login exitoso');
                                   Get.offAllNamed('/home');
                                 } else {
+                                  // Solo mostrar errores críticos de autenticación
                                   Get.snackbar(
-                                    "Error",
-                                    robleAuthLoginController.errorMessage.value,
+                                    "Error de Acceso",
+                                    "Credenciales incorrectas. Verifica tu email y contraseña.",
                                     backgroundColor: Colors.red,
                                     colorText: Colors.white,
                                     snackPosition: SnackPosition.TOP,
+                                    duration: const Duration(seconds: 3),
                                   );
                                 }
                               },
