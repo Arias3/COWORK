@@ -45,7 +45,7 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     // Diferir la carga de datos hasta después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarDatos();
@@ -202,8 +202,10 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
           indicatorColor: Colors.white,
           tabs: [
             Tab(text: 'Resumen', icon: Icon(Icons.dashboard, size: 20)),
-            Tab(text: 'Por Equipo', icon: Icon(Icons.groups, size: 20)),
-            Tab(text: 'Por Estudiante', icon: Icon(Icons.person, size: 20)),
+            Tab(
+              text: 'Equipos y Evaluadores',
+              icon: Icon(Icons.groups, size: 20),
+            ),
           ],
         ),
         actions: [
@@ -214,11 +216,7 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
           ? Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
-              children: [
-                _buildResumenTab(),
-                _buildPorEquipoTab(),
-                _buildPorEstudianteTab(),
-              ],
+              children: [_buildResumenTab(), _buildEquiposYEvaluadoresTab()],
             ),
     );
   }
@@ -598,7 +596,7 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
     );
   }
 
-  Widget _buildPorEquipoTab() {
+  Widget _buildEquiposYEvaluadoresTab() {
     return Obx(() {
       final promediosEquipos = _detalleController.promediosEquipos;
 
@@ -655,30 +653,47 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
 
           if (equipoDetallado != null) {
             // Mostrar equipo con datos detallados
-            return _buildEquipoCard(
+            return _buildEquipoCardUnificado(
               equipoDetallado['equipo'],
               equipoDetallado['estudiantes'] as List<Map<String, dynamic>>,
               promedio,
+              equipoId,
             );
           } else {
-            // Mostrar equipo básico solo con promedio
-            return _buildEquipoBasicoCard(equipoId, nombreEquipo, promedio);
+            // Mostrar equipo básico con estudiantes evaluados
+            return _buildEquipoBasicoCardUnificado(
+              equipoId,
+              nombreEquipo,
+              promedio,
+            );
           }
         },
       );
     });
   }
 
-  Widget _buildEquipoBasicoCard(
+  Widget _buildEquipoBasicoCardUnificado(
     String equipoId,
     String nombreEquipo,
     double promedio,
   ) {
     final color = _getColorPorPromedio(promedio);
+    final promediosEstudiantes = _detalleController.promediosEstudiantes;
+
+    // Obtener estudiantes que pertenecen a este equipo y tienen evaluaciones
+    final estudiantesEvaluados = <MapEntry<String, double>>[];
+    for (final entry in promediosEstudiantes.entries) {
+      final estudianteId = entry.key;
+      final promedioEstudiante = entry.value;
+
+      // Verificar si este estudiante evaluó a miembros de este equipo
+      // Para simplificar, mostraremos todos los estudiantes con evaluaciones
+      estudiantesEvaluados.add(MapEntry(estudianteId, promedioEstudiante));
+    }
 
     return Card(
       margin: EdgeInsets.only(bottom: 16),
-      child: ListTile(
+      child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: color,
           child: Text(
@@ -697,25 +712,116 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            promedio.toStringAsFixed(2),
-            style: TextStyle(
-              fontSize: 14,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                promedio.toStringAsFixed(2),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(width: 4),
+              Icon(Icons.expand_more, size: 16, color: Colors.grey),
+            ],
           ),
         ),
+        children: [
+          Container(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.people, color: Colors.blue[600], size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Estudiantes Evaluados (${estudiantesEvaluados.length})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                if (estudiantesEvaluados.isEmpty)
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.grey[600]),
+                        SizedBox(width: 8),
+                        Text(
+                          'No hay estudiantes evaluados en este equipo',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...estudiantesEvaluados.map((entry) {
+                    final estudianteId = entry.key;
+                    final promedioEstudiante = entry.value;
+                    final nombreEstudiante =
+                        _usuariosNombres[estudianteId] ??
+                        'Usuario $estudianteId';
+
+                    return _buildEstudianteItemUnificado(
+                      nombreEstudiante,
+                      promedioEstudiante,
+                      estudianteId,
+                    );
+                  }).toList(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEquipoCard(
+  Widget _buildEquipoCardUnificado(
     dynamic equipo,
     List<Map<String, dynamic>> estudiantes,
     double promedio,
+    String equipoId,
   ) {
     final color = _getColorPorPromedio(promedio);
+    final promediosEstudiantes = _detalleController.promediosEstudiantes;
+
+    // Separar estudiantes del equipo que han sido evaluados vs todos los evaluados
+    final estudiantesDelEquipo = <Map<String, dynamic>>[];
+    final otrosEvaluados = <MapEntry<String, double>>[];
+
+    // Agregar estudiantes del equipo con sus evaluaciones
+    for (final estudiante in estudiantes) {
+      final estudianteId = estudiante['id'];
+      final promedioEstudiante = promediosEstudiantes[estudianteId] ?? 0.0;
+
+      estudiantesDelEquipo.add({
+        ...estudiante,
+        'promedio': promedioEstudiante,
+        'tieneEvaluacion': promediosEstudiantes.containsKey(estudianteId),
+      });
+    }
+
+    // Agregar otros estudiantes evaluados que no están en este equipo
+    for (final entry in promediosEstudiantes.entries) {
+      final estudianteId = entry.key;
+      final yaEstaEnEquipo = estudiantes.any((e) => e['id'] == estudianteId);
+
+      if (!yaEstaEnEquipo) {
+        otrosEvaluados.add(MapEntry(estudianteId, entry.value));
+      }
+    }
 
     return Card(
       margin: EdgeInsets.only(bottom: 16),
@@ -732,23 +838,80 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${estudiantes.length} estudiantes • Promedio: ${_obtenerNivelPorPromedio(promedio)}',
+          '${estudiantes.length} miembros • Promedio: ${_obtenerNivelPorPromedio(promedio)}',
         ),
         children: [
           Padding(
             padding: EdgeInsets.all(16),
             child: Column(
-              children: estudiantes.map((estudiante) {
-                final promedioEstudiante =
-                    _detalleController.promediosEstudiantes[estudiante['id']] ??
-                    0.0;
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sección: Miembros del equipo
+                Row(
+                  children: [
+                    Icon(Icons.group, color: Colors.green[600], size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Miembros del Equipo (${estudiantesDelEquipo.length})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[700],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                ...estudiantesDelEquipo.map((estudiante) {
+                  return _buildEstudianteItemUnificado(
+                    estudiante['nombre'],
+                    estudiante['promedio'],
+                    estudiante['id'],
+                    esMiembroEquipo: true,
+                    tieneEvaluacion: estudiante['tieneEvaluacion'],
+                    email: estudiante['email'],
+                  );
+                }).toList(),
 
-                return _buildEstudianteItem(
-                  estudiante['nombre'],
-                  estudiante['email'],
-                  promedioEstudiante,
-                );
-              }).toList(),
+                // Sección: Otros evaluados (si hay)
+                if (otrosEvaluados.isNotEmpty) ...[
+                  SizedBox(height: 16),
+                  Divider(),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        color: Colors.blue[600],
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Otros Evaluados (${otrosEvaluados.length})',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  ...otrosEvaluados.map((entry) {
+                    final estudianteId = entry.key;
+                    final promedioEstudiante = entry.value;
+                    final nombreEstudiante =
+                        _usuariosNombres[estudianteId] ??
+                        'Usuario $estudianteId';
+
+                    return _buildEstudianteItemUnificado(
+                      nombreEstudiante,
+                      promedioEstudiante,
+                      estudianteId,
+                      esMiembroEquipo: false,
+                      tieneEvaluacion: true,
+                    );
+                  }).toList(),
+                ],
+              ],
             ),
           ),
         ],
@@ -756,172 +919,159 @@ class _EvaluacionDetallePageState extends State<EvaluacionDetallePage>
     );
   }
 
-  Widget _buildEstudianteItem(String nombre, String email, double promedio) {
-    final color = _getColorPorPromedio(promedio);
+  Widget _buildEstudianteItemUnificado(
+    String nombre,
+    double promedio,
+    String estudianteId, {
+    bool esMiembroEquipo = false,
+    bool tieneEvaluacion = true,
+    String? email,
+  }) {
+    final color = tieneEvaluacion
+        ? _getColorPorPromedio(promedio)
+        : Colors.grey;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: esMiembroEquipo
+            ? (tieneEvaluacion ? Colors.green[50] : Colors.orange[50])
+            : Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: esMiembroEquipo
+              ? (tieneEvaluacion ? Colors.green[200]! : Colors.orange[200]!)
+              : Colors.blue[200]!,
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
+          // Avatar con promedio o indicador
           CircleAvatar(
-            radius: 16,
-            backgroundColor: color.withOpacity(0.2),
-            child: Text(
-              promedio.toStringAsFixed(1),
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            radius: 18,
+            backgroundColor: tieneEvaluacion
+                ? color.withOpacity(0.2)
+                : Colors.grey[300],
+            child: tieneEvaluacion
+                ? Text(
+                    promedio.toStringAsFixed(1),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : Icon(Icons.pending, size: 16, color: Colors.grey[600]),
           ),
           SizedBox(width: 12),
+
+          // Información del estudiante
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(nombre, style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(
-                  email,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                Row(
+                  children: [
+                    // Icono indicativo del tipo
+                    Icon(
+                      esMiembroEquipo
+                          ? (tieneEvaluacion
+                                ? Icons.group
+                                : Icons.group_outlined)
+                          : Icons.person,
+                      size: 16,
+                      color: esMiembroEquipo
+                          ? (tieneEvaluacion
+                                ? Colors.green[600]
+                                : Colors.orange[600])
+                          : Colors.blue[600],
+                    ),
+                    SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        nombre,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                SizedBox(height: 2),
+                Text(
+                  esMiembroEquipo
+                      ? (tieneEvaluacion
+                            ? 'Miembro del equipo'
+                            : 'Miembro (sin evaluar)')
+                      : 'Evaluador externo',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                if (email != null && email.isNotEmpty) ...[
+                  SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ],
               ],
             ),
           ),
+
+          // Badge con nivel o estado
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: tieneEvaluacion
+                  ? color.withOpacity(0.1)
+                  : Colors.grey[200],
               borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _obtenerNivelPorPromedio(promedio),
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w600,
+              border: Border.all(
+                color: tieneEvaluacion
+                    ? color.withOpacity(0.3)
+                    : Colors.grey[400]!,
               ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (tieneEvaluacion) ...[
+                  Text(
+                    promedio.toStringAsFixed(2),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _obtenerNivelPorPromedio(promedio),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    'Sin evaluar',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPorEstudianteTab() {
-    return Obx(() {
-      final promediosEstudiantes = _detalleController.promediosEstudiantes;
-
-      // Si no hay estudiantes con evaluaciones, mostrar mensaje
-      if (promediosEstudiantes.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.person_outline, size: 64, color: Colors.grey[400]),
-              SizedBox(height: 16),
-              Text(
-                'No hay estudiantes con evaluaciones',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Las evaluaciones aparecerán aquí una vez que se completen',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        );
-      }
-
-      final estudiantesOrdenados = promediosEstudiantes.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      return ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: estudiantesOrdenados.length,
-        itemBuilder: (context, index) {
-          final entry = estudiantesOrdenados[index];
-          final estudianteId = entry.key;
-          final promedio = entry.value;
-          final nombre =
-              _usuariosNombres[estudianteId] ?? 'Usuario $estudianteId';
-
-          return _buildEstudianteRankingCard(
-            index + 1,
-            nombre,
-            promedio,
-            estudianteId,
-          );
-        },
-      );
-    });
-  }
-
-  Widget _buildEstudianteRankingCard(
-    int posicion,
-    String nombre,
-    double promedio,
-    String estudianteId,
-  ) {
-    final color = _getColorPorPromedio(promedio);
-
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: posicion <= 3
-                ? (posicion == 1
-                      ? Colors.amber
-                      : posicion == 2
-                      ? Colors.grey[400]
-                      : Colors.brown[300])
-                : color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              posicion <= 3 ? '#$posicion' : promedio.toStringAsFixed(1),
-              style: TextStyle(
-                fontSize: posicion <= 3 ? 12 : 14,
-                fontWeight: FontWeight.w600,
-                color: posicion <= 3 ? Colors.white : color,
-              ),
-            ),
-          ),
-        ),
-        title: Text(nombre, style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('Promedio general'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              promedio.toStringAsFixed(2),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            Text(
-              _obtenerNivelPorPromedio(promedio),
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

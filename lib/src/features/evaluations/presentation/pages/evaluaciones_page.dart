@@ -4,7 +4,6 @@ import '../../domain/entities/evaluacion_periodo.dart';
 import '../controllers/evaluacion_periodo_controller.dart';
 import '../../../activities/domain/entities/activity.dart';
 import 'crear_evaluacion_page.dart';
-import 'evaluacion_detalle_simple_page.dart';
 import 'evaluacion_detalle_page.dart';
 
 class EvaluacionesPage extends StatefulWidget {
