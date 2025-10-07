@@ -1411,6 +1411,7 @@ class _CategoriasEquiposPageState extends State<CategoriasEquiposPage> {
   }
 
   // Nueva vista para las evaluaciones
+  // Nueva vista para las evaluaciones
   Widget _buildEvaluacionesView() {
     return Column(
       children: [
