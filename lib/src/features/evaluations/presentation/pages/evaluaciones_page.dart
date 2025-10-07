@@ -5,6 +5,7 @@ import '../controllers/evaluacion_periodo_controller.dart';
 import '../../../activities/domain/entities/activity.dart';
 import 'crear_evaluacion_page.dart';
 import 'evaluacion_detalle_simple_page.dart';
+import 'evaluacion_detalle_page.dart';
 
 class EvaluacionesPage extends StatefulWidget {
   final Activity activity;
@@ -508,7 +509,7 @@ class _EvaluacionesPageState extends State<EvaluacionesPage> {
 
   void _abrirDetalleEvaluacion(EvaluacionPeriodo evaluacion) {
     Get.to(
-      () => EvaluacionDetalleSimplePage(
+      () => EvaluacionDetallePage(
         evaluacion: evaluacion,
         activity: widget.activity,
       ),

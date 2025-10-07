@@ -43,6 +43,7 @@ import '../../src/features/categories/domain/usecases/equipo_actividad_usecase.d
 import '../../src/features/activities/domain/usecases/activity_usecase.dart';
 import '../../src/features/evaluations/domain/usecases/evaluacion_periodo_usecase.dart';
 import '../../src/features/evaluations/domain/usecases/evaluacion_individual_usecase.dart';
+import '../../src/features/evaluations/domain/usecases/evaluacion_analisis_usecase_temp.dart';
 
 import '../../src/features/auth/presentation/controllers/roble_auth_login_controller.dart';
 import '../../src/features/auth/presentation/controllers/roble_auth_logout_controller.dart';
@@ -54,6 +55,7 @@ import '../../src/features/categories/presentation/controllers/categoria_equipo_
 import '../../src/features/activities/presentation/controllers/activity_controller.dart';
 import '../../src/features/evaluations/presentation/controllers/evaluacion_periodo_controller.dart';
 import '../../src/features/evaluations/presentation/controllers/evaluacion_individual_controller.dart';
+import '../../src/features/evaluations/presentation/controllers/evaluacion_detalle_controller_temp.dart';
 
 class DependencyInjection {
   // Helper para logs compatibles con web
@@ -257,6 +259,18 @@ class DependencyInjection {
       ),
       permanent: true,
     );
+
+    // UseCase temporal para análisis de evaluaciones
+    Get.put<EvaluacionAnalisisUseCaseTemp>(
+      EvaluacionAnalisisUseCaseTemp(
+        Get.find<EvaluacionPeriodoRepository>(),
+        Get.find<EvaluacionIndividualRepository>(),
+        Get.find<CategoriaEquipoUseCase>(),
+        Get.find<EquipoActividadUseCase>(),
+        Get.find<UsuarioRepository>(),
+      ),
+      permanent: true,
+    );
     Get.put<RobleAuthLoginUseCase>(
       RobleAuthLoginUseCase(Get.find()),
       permanent: true,
@@ -323,6 +337,16 @@ class DependencyInjection {
       ),
       fenix: true,
     );
+
+    // Controller temporal para análisis de evaluaciones
+    Get.lazyPut<EvaluacionDetalleControllerTemp>(
+      () => EvaluacionDetalleControllerTemp(
+        Get.find<EvaluacionPeriodoUseCase>(),
+        Get.find<EvaluacionIndividualUseCase>(),
+      ),
+      fenix: true,
+    );
+
     _webSafeLog('Controllers registrados');
   }
 }

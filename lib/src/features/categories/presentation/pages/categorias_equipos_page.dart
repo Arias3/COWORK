@@ -7,6 +7,12 @@ import '../../domain/entities/tipo_asignacion.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../controllers/categoria_equipo_controller.dart';
 import '../../../activities/presentation/pages/activities_page.dart';
+import '../../../evaluations/domain/entities/evaluacion_periodo.dart';
+import '../../../evaluations/presentation/controllers/evaluacion_periodo_controller.dart';
+import '../../../evaluations/presentation/pages/evaluacion_detalle_page.dart';
+import '../../../evaluations/presentation/pages/evaluaciones_page.dart';
+import '../../../activities/domain/entities/activity.dart';
+import '../../../activities/presentation/controllers/activity_controller.dart';
 
 class CategoriasEquiposPage extends StatelessWidget {
   final CursoDomain curso;
@@ -26,7 +32,7 @@ class CategoriasEquiposPage extends StatelessWidget {
       final esProfesor = controller.esProfesorDelCursoActual;
 
       return DefaultTabController(
-        length: esProfesor ? 2 : 1,
+        length: esProfesor ? 3 : 1,
         child: Scaffold(
           backgroundColor: Colors.grey[50],
           appBar: _buildAppBar(esProfesor),
@@ -43,7 +49,7 @@ class CategoriasEquiposPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Equipos y Categorías',
+            'Gestión del Curso',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           Text(
@@ -57,6 +63,7 @@ class CategoriasEquiposPage extends StatelessWidget {
               tabs: [
                 Tab(icon: Icon(Icons.category), text: 'Categorías'),
                 Tab(icon: Icon(Icons.groups), text: 'Equipos'),
+                Tab(icon: Icon(Icons.assessment), text: 'Evaluaciones'),
               ],
             )
           : null,
@@ -69,6 +76,7 @@ class CategoriasEquiposPage extends StatelessWidget {
         children: [
           _buildCategoriasView(controller),
           _buildEquiposView(controller),
+          _buildEvaluacionesView(),
         ],
       );
     }
@@ -1355,5 +1363,419 @@ class CategoriasEquiposPage extends StatelessWidget {
       );
     }
     // El estado se libera automáticamente en el controlador
+  }
+
+  // Nueva vista para las evaluaciones
+  Widget _buildEvaluacionesView() {
+    // Obtener controladores necesarios
+    final evaluacionController = Get.find<EvaluacionPeriodoController>();
+    final activityController = Get.find<ActivityController>();
+
+    return Column(
+      children: [
+        // Header con información del curso
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[50]!, Colors.blue[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.assessment, color: Colors.blue[700], size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Evaluaciones del Curso',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                        Text(
+                          'Gestiona y revisa las evaluaciones por períodos',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Lista de evaluaciones
+        Expanded(
+          child: FutureBuilder<List<Activity>>(
+            future: _cargarActividadesDelCurso(activityController),
+            builder: (context, activitySnapshot) {
+              if (activitySnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (activitySnapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error al cargar actividades',
+                        style: TextStyle(fontSize: 18, color: Colors.red[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${activitySnapshot.error}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final activities = activitySnapshot.data ?? [];
+
+              if (activities.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.assignment_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay actividades',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Crea actividades para poder gestionar evaluaciones',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: activities.length,
+                itemBuilder: (context, index) {
+                  final activity = activities[index];
+                  return _buildActivityEvaluacionCard(
+                    activity,
+                    evaluacionController,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<List<Activity>> _cargarActividadesDelCurso(
+    ActivityController activityController,
+  ) async {
+    try {
+      // Primero obtener las categorías del curso
+      final categoriaController = Get.find<CategoriaEquipoController>();
+      await categoriaController.loadCategoriasPorCurso(curso);
+
+      final categorias = categoriaController.categorias;
+      final todasActividades = <Activity>[];
+
+      // Cargar actividades de cada categoría
+      for (final categoria in categorias) {
+        await activityController.getActivities(categoryId: categoria.id);
+        todasActividades.addAll(activityController.activities);
+      }
+
+      return todasActividades;
+    } catch (e) {
+      print('Error cargando actividades: $e');
+      return [];
+    }
+  }
+
+  Widget _buildActivityEvaluacionCard(
+    Activity activity,
+    EvaluacionPeriodoController evaluacionController,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.assignment, color: Colors.green[700]),
+        ),
+        title: Text(
+          activity.nombre,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          activity.descripcion,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: FutureBuilder<List<EvaluacionPeriodo>>(
+              future: _cargarEvaluacionesPorActividad(
+                evaluacionController,
+                activity.id.toString(),
+              ),
+              builder: (context, evaluacionSnapshot) {
+                if (evaluacionSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final evaluaciones = evaluacionSnapshot.data ?? [];
+
+                if (evaluaciones.isEmpty) {
+                  return Column(
+                    children: [
+                      Icon(
+                        Icons.assessment_outlined,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No hay evaluaciones para esta actividad',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Navegar a la página de evaluaciones de esa actividad
+                          Get.to(() => EvaluacionesPage(activity: activity));
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear Evaluación'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Evaluaciones (${evaluaciones.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Get.to(() => EvaluacionesPage(activity: activity));
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Crear'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...evaluaciones
+                        .map(
+                          (evaluacion) =>
+                              _buildEvaluacionCard(evaluacion, activity),
+                        )
+                        .toList(),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<List<EvaluacionPeriodo>> _cargarEvaluacionesPorActividad(
+    EvaluacionPeriodoController controller,
+    String activityId,
+  ) async {
+    try {
+      await controller.cargarEvaluacionesPorActividad(activityId);
+      return controller.evaluacionesPorActividad[activityId] ?? [];
+    } catch (e) {
+      print('Error cargando evaluaciones: $e');
+      return [];
+    }
+  }
+
+  Widget _buildEvaluacionCard(EvaluacionPeriodo evaluacion, Activity activity) {
+    Color statusColor = _getEvaluacionStatusColor(evaluacion.estado);
+    IconData statusIcon = _getEvaluacionStatusIcon(evaluacion.estado);
+    String statusText = _getEvaluacionStatusText(evaluacion.estado);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          // Navegar al detalle de la evaluación
+          Get.to(
+            () => EvaluacionDetallePage(
+              evaluacion: evaluacion,
+              activity: activity,
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(statusIcon, color: statusColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      evaluacion.titulo,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.circle, size: 8, color: statusColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _formatFecha(evaluacion.fechaCreacion),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (evaluacion.descripcion != null &&
+                        evaluacion.descripcion!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        evaluacion.descripcion!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getEvaluacionStatusColor(EstadoEvaluacionPeriodo estado) {
+    switch (estado) {
+      case EstadoEvaluacionPeriodo.pendiente:
+        return Colors.orange;
+      case EstadoEvaluacionPeriodo.activo:
+        return Colors.green;
+      case EstadoEvaluacionPeriodo.finalizado:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getEvaluacionStatusIcon(EstadoEvaluacionPeriodo estado) {
+    switch (estado) {
+      case EstadoEvaluacionPeriodo.pendiente:
+        return Icons.pending;
+      case EstadoEvaluacionPeriodo.activo:
+        return Icons.play_circle;
+      case EstadoEvaluacionPeriodo.finalizado:
+        return Icons.check_circle;
+    }
+  }
+
+  String _getEvaluacionStatusText(EstadoEvaluacionPeriodo estado) {
+    switch (estado) {
+      case EstadoEvaluacionPeriodo.pendiente:
+        return 'Pendiente';
+      case EstadoEvaluacionPeriodo.activo:
+        return 'Activa';
+      case EstadoEvaluacionPeriodo.finalizado:
+        return 'Finalizada';
+    }
+  }
+
+  String _formatFecha(DateTime fecha) {
+    return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 }

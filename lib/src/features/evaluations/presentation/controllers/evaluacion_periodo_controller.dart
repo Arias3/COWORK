@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/entities/evaluacion_periodo.dart';
 import '../../domain/usecases/evaluacion_periodo_usecase.dart';
@@ -277,6 +278,99 @@ class EvaluacionPeriodoController extends GetxController {
     _evaluacionesPorProfesor.clear();
     _evaluacionesActivas.clear();
     _evaluacionActual.value = null;
+  }
+
+  // Métodos temporales para funcionalidad de detalle
+  Future<void> iniciarEvaluacionTemp(String evaluacionId) async {
+    try {
+      _isLoading.value = true;
+      print('🔄 [TEMP] Iniciando evaluación: $evaluacionId');
+
+      // Cargar la evaluación actual
+      await cargarEvaluacionPorId(evaluacionId);
+
+      if (_evaluacionActual.value != null) {
+        // Cambiar estado a activo
+        final evaluacion = _evaluacionActual.value!;
+        final evaluacionActualizada = evaluacion.copyWith(
+          estado: EstadoEvaluacionPeriodo.activo,
+          fechaInicio: DateTime.now(),
+        );
+
+        // Actualizar en el repositorio
+        await _useCase.actualizarEvaluacionPeriodo(evaluacionActualizada);
+
+        // Actualizar en el estado local
+        _evaluacionActual.value = evaluacionActualizada;
+
+        print('✅ [TEMP] Evaluación iniciada correctamente');
+
+        Get.snackbar(
+          'Éxito',
+          'Evaluación iniciada correctamente',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      print('❌ [TEMP] Error iniciando evaluación: $e');
+      Get.snackbar(
+        'Error',
+        'Error al iniciar evaluación: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> finalizarEvaluacionTemp(String evaluacionId) async {
+    try {
+      _isLoading.value = true;
+      print('🔄 [TEMP] Finalizando evaluación: $evaluacionId');
+
+      // Cargar la evaluación actual
+      await cargarEvaluacionPorId(evaluacionId);
+
+      if (_evaluacionActual.value != null) {
+        // Cambiar estado a finalizado
+        final evaluacion = _evaluacionActual.value!;
+        final evaluacionActualizada = evaluacion.copyWith(
+          estado: EstadoEvaluacionPeriodo.finalizado,
+          fechaFin: DateTime.now(),
+        );
+
+        // Actualizar en el repositorio
+        await _useCase.actualizarEvaluacionPeriodo(evaluacionActualizada);
+
+        // Actualizar en el estado local
+        _evaluacionActual.value = evaluacionActualizada;
+
+        print('✅ [TEMP] Evaluación finalizada correctamente');
+
+        Get.snackbar(
+          'Éxito',
+          'Evaluación finalizada correctamente',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      print('❌ [TEMP] Error finalizando evaluación: $e');
+      Get.snackbar(
+        'Error',
+        'Error al finalizar evaluación: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   @override
