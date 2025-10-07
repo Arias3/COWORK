@@ -24,6 +24,12 @@ class CategoriaEquipoController extends GetxController {
   var isLoadingEquipos = false.obs;
   var isRemovingStudent = false.obs;
 
+  // Cache de datos para optimizar rendimiento
+  final Map<String, List<CategoriaEquipo>> _categoriasCache = {};
+  final Map<int, List<Equipo>> _equiposCache = {};
+  final Map<String, List<Usuario>> _estudiantesCache = {};
+  DateTime? _lastCacheUpdate;
+
   // Datos del curso actual
   var cursoActual = Rxn<CursoDomain>();
   var categoriaSeleccionada = Rxn<CategoriaEquipo>();
@@ -39,6 +45,36 @@ class CategoriaEquipoController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+  }
+
+  // ============================================================================
+  // MÉTODOS DE CACHÉ PARA OPTIMIZACIÓN
+  // ============================================================================
+
+  bool _isCacheValid() {
+    if (_lastCacheUpdate == null) return false;
+    final now = DateTime.now();
+    final timeDifference = now.difference(_lastCacheUpdate!).inMinutes;
+    return timeDifference < 5; // Cache válido por 5 minutos
+  }
+
+  void _updateCacheTimestamp() {
+    _lastCacheUpdate = DateTime.now();
+  }
+
+  void _clearCache() {
+    _categoriasCache.clear();
+    _equiposCache.clear();
+    _estudiantesCache.clear();
+    _lastCacheUpdate = null;
+  }
+
+  // Método para refrescar datos manualmente
+  Future<void> refreshData() async {
+    _clearCache();
+    if (cursoActual.value != null) {
+      await loadCategoriasPorCurso(cursoActual.value!);
+    }
   }
 
   // ============================================================================
@@ -68,8 +104,38 @@ class CategoriaEquipoController extends GetxController {
       isLoading.value = true;
       cursoActual.value = curso;
 
+      // Verificar caché primero
+      final cacheKey = curso.id.toString();
+      if (_isCacheValid() && _categoriasCache.containsKey(cacheKey)) {
+        print('📦 Usando categorías desde caché para curso: ${curso.nombre}');
+        categorias.assignAll(_categoriasCache[cacheKey]!);
+
+        if (categorias.isNotEmpty) {
+          // Si hay una categoría ya seleccionada, mantenerla
+          if (categoriaSeleccionada.value != null) {
+            final categoriaExistente = categorias.firstWhereOrNull(
+              (cat) => cat.id == categoriaSeleccionada.value!.id,
+            );
+            if (categoriaExistente != null) {
+              await selectCategoria(categoriaExistente);
+              return;
+            }
+          }
+          // Si no hay categoría seleccionada, seleccionar la primera
+          await selectCategoria(categorias.first);
+        }
+        return;
+      }
+
+      // Cargar desde API si no hay caché válido
+      print('🌐 Cargando categorías desde API para curso: ${curso.nombre}');
       final categoriasList = await _categoriaEquipoUseCase
-          .getCategoriasPorCurso(curso.id!);
+          .getCategoriasPorCurso(curso.id);
+
+      // Actualizar caché
+      _categoriasCache[cacheKey] = categoriasList;
+      _updateCacheTimestamp();
+
       categorias.assignAll(categoriasList);
 
       if (categoriasList.isNotEmpty) {
@@ -336,10 +402,13 @@ class CategoriaEquipoController extends GetxController {
     try {
       await _categoriaEquipoUseCase.createCategoria(
         nombre: nombreCategoriaController.text.trim(),
-        cursoId: cursoActual.value!.id!,
+        cursoId: cursoActual.value!.id,
         tipoAsignacion: tipoAsignacionSeleccionado.value,
         maxEstudiantesPorEquipo: maxEstudiantesPorEquipo.value,
       );
+
+      // Invalidar caché después de crear
+      _clearCache();
 
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
@@ -373,6 +442,9 @@ class CategoriaEquipoController extends GetxController {
         nombre: nombreCategoriaController.text.trim(),
         maxEstudiantesPorEquipo: maxEstudiantesPorEquipo.value,
       );
+
+      // Invalidar caché después de editar
+      _clearCache();
 
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
@@ -496,6 +568,10 @@ class CategoriaEquipoController extends GetxController {
       }
 
       await _categoriaEquipoUseCase.deleteCategoria(categoria.id!);
+
+      // Invalidar caché después de eliminar
+      _clearCache();
+
       Get.back();
       await loadCategoriasPorCurso(cursoActual.value!);
       _showSuccessSnackbar(
@@ -523,9 +599,29 @@ class CategoriaEquipoController extends GetxController {
         throw Exception('ID de categoría no válido');
       }
 
+      // Verificar caché de equipos primero
+      if (_isCacheValid() && _equiposCache.containsKey(categoria.id!)) {
+        print(
+          '📦 Usando equipos desde caché para categoría: ${categoria.nombre}',
+        );
+        equipos.assignAll(_equiposCache[categoria.id!]!);
+        await _checkMiEquipo();
+        _loadEquiposDisponibles();
+        return;
+      }
+
+      // Cargar desde API si no hay caché válido
+      print(
+        '🌐 Cargando equipos desde API para categoría: ${categoria.nombre}',
+      );
       final equiposList = await _categoriaEquipoUseCase.getEquiposPorCategoria(
         categoria.id!,
       );
+
+      // Actualizar caché
+      _equiposCache[categoria.id!] = equiposList;
+      _updateCacheTimestamp();
+
       equipos.assignAll(equiposList);
       await _checkMiEquipo();
       _loadEquiposDisponibles();
@@ -664,6 +760,9 @@ class CategoriaEquipoController extends GetxController {
         nombre: nombreEquipo.trim(),
         categoriaId: categoriaSeleccionada.value!.id!,
       );
+
+      // Invalidar caché de equipos para esta categoría
+      _equiposCache.remove(categoriaSeleccionada.value!.id!);
 
       await selectCategoria(categoriaSeleccionada.value!);
       _showSuccessSnackbar(
@@ -855,6 +954,11 @@ class CategoriaEquipoController extends GetxController {
         estudianteId,
       );
 
+      // Invalidar caché de equipos para esta categoría
+      if (categoriaSeleccionada.value?.id != null) {
+        _equiposCache.remove(categoriaSeleccionada.value!.id!);
+      }
+
       _showSuccessSnackbar(
         'Estudiante agregado',
         'El estudiante ha sido agregado al equipo exitosamente',
@@ -890,6 +994,11 @@ class CategoriaEquipoController extends GetxController {
         estudianteId,
       );
 
+      // Invalidar caché de equipos para esta categoría
+      if (categoriaSeleccionada.value?.id != null) {
+        _equiposCache.remove(categoriaSeleccionada.value!.id!);
+      }
+
       _showSuccessSnackbar(
         'Estudiante removido',
         'El estudiante ha sido removido del equipo exitosamente',
@@ -912,7 +1021,26 @@ class CategoriaEquipoController extends GetxController {
     try {
       final curso = cursoActual.value;
       if (curso == null) return [];
-      return await _categoriaEquipoUseCase.getEstudiantesDelCurso(curso.id);
+
+      final cacheKey = curso.id.toString();
+
+      // Verificar caché de estudiantes primero
+      if (_isCacheValid() && _estudiantesCache.containsKey(cacheKey)) {
+        print('📦 Usando estudiantes desde caché para curso: ${curso.nombre}');
+        return _estudiantesCache[cacheKey]!;
+      }
+
+      // Cargar desde API si no hay caché válido
+      print('🌐 Cargando estudiantes desde API para curso: ${curso.nombre}');
+      final estudiantes = await _categoriaEquipoUseCase.getEstudiantesDelCurso(
+        curso.id,
+      );
+
+      // Actualizar caché
+      _estudiantesCache[cacheKey] = estudiantes;
+      _updateCacheTimestamp();
+
+      return estudiantes;
     } catch (e) {
       print('❌ [CONTROLLER] Error obteniendo estudiantes del curso: $e');
       return [];

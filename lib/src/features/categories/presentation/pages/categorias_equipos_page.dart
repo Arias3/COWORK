@@ -14,18 +14,56 @@ import '../../../evaluations/presentation/pages/evaluaciones_page.dart';
 import '../../../activities/domain/entities/activity.dart';
 import '../../../activities/presentation/controllers/activity_controller.dart';
 
-class CategoriasEquiposPage extends StatelessWidget {
+class CategoriasEquiposPage extends StatefulWidget {
   final CursoDomain curso;
 
   const CategoriasEquiposPage({Key? key, required this.curso})
     : super(key: key);
 
   @override
+  State<CategoriasEquiposPage> createState() => _CategoriasEquiposPageState();
+}
+
+class _CategoriasEquiposPageState extends State<CategoriasEquiposPage> {
+  // Método para inicializar controladores de manera segura
+  void _ensureControllersInitialized() {
+    try {
+      Get.find<ActivityController>();
+    } catch (e) {
+      // Si ActivityController no existe, intentar encontrarlo o manejarlo
+      print('⚠️ ActivityController no inicializado al entrar a la página');
+    }
+
+    try {
+      Get.find<EvaluacionPeriodoController>();
+    } catch (e) {
+      print(
+        '⚠️ EvaluacionPeriodoController no inicializado al entrar a la página',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    // Limpiar cualquier estado que pueda causar problemas al regresar
+    try {
+      // Opcional: limpiar caché o resetear estado específico
+      print('🔄 Limpiando estado de CategoriasEquiposPage');
+    } catch (e) {
+      print('Error al limpiar estado: $e');
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final controller = Get.find<CategoriaEquipoController>();
 
+    // Asegurar que los controladores estén inicializados
+    _ensureControllersInitialized();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.loadCategoriasPorCurso(curso);
+      controller.loadCategoriasPorCurso(widget.curso);
     });
 
     return Obx(() {
@@ -44,6 +82,8 @@ class CategoriasEquiposPage extends StatelessWidget {
   }
 
   PreferredSizeWidget _buildAppBar(bool esProfesor) {
+    final controller = Get.find<CategoriaEquipoController>();
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,11 +93,18 @@ class CategoriasEquiposPage extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           Text(
-            curso.nombre,
+            widget.curso.nombre,
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: () => controller.refreshData(),
+          tooltip: 'Actualizar datos',
+        ),
+      ],
       bottom: esProfesor
           ? const TabBar(
               tabs: [
@@ -90,7 +137,7 @@ class CategoriasEquiposPage extends StatelessWidget {
       }
 
       return RefreshIndicator(
-        onRefresh: () => controller.loadCategoriasPorCurso(curso),
+        onRefresh: () => controller.refreshData(),
         child: controller.categorias.isEmpty
             ? _buildEmptyState(
                 'No hay categorías',
@@ -239,9 +286,7 @@ class CategoriasEquiposPage extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: () => controller.selectCategoria(
-                controller.categoriaSeleccionada.value!,
-              ),
+              onRefresh: () => controller.refreshData(),
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: controller.equipos.length,
@@ -1367,10 +1412,6 @@ class CategoriasEquiposPage extends StatelessWidget {
 
   // Nueva vista para las evaluaciones
   Widget _buildEvaluacionesView() {
-    // Obtener controladores necesarios
-    final evaluacionController = Get.find<EvaluacionPeriodoController>();
-    final activityController = Get.find<ActivityController>();
-
     return Column(
       children: [
         // Header con información del curso
@@ -1424,7 +1465,7 @@ class CategoriasEquiposPage extends StatelessWidget {
         // Lista de evaluaciones
         Expanded(
           child: FutureBuilder<List<Activity>>(
-            future: _cargarActividadesDelCurso(activityController),
+            future: _cargarActividadesDelCurso(),
             builder: (context, activitySnapshot) {
               if (activitySnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -1496,10 +1537,7 @@ class CategoriasEquiposPage extends StatelessWidget {
                 itemCount: activities.length,
                 itemBuilder: (context, index) {
                   final activity = activities[index];
-                  return _buildActivityEvaluacionCard(
-                    activity,
-                    evaluacionController,
-                  );
+                  return _buildActivityEvaluacionCard(activity);
                 },
               );
             },
@@ -1509,13 +1547,21 @@ class CategoriasEquiposPage extends StatelessWidget {
     );
   }
 
-  Future<List<Activity>> _cargarActividadesDelCurso(
-    ActivityController activityController,
-  ) async {
+  Future<List<Activity>> _cargarActividadesDelCurso() async {
     try {
+      // Obtener controladores de manera segura
+      ActivityController? activityController;
+      try {
+        activityController = Get.find<ActivityController>();
+      } catch (e) {
+        print('ActivityController no encontrado, intentando inicializar...');
+        // Si no existe, podríamos intentar inicializarlo aquí
+        return [];
+      }
+
       // Primero obtener las categorías del curso
       final categoriaController = Get.find<CategoriaEquipoController>();
-      await categoriaController.loadCategoriasPorCurso(curso);
+      await categoriaController.loadCategoriasPorCurso(widget.curso);
 
       final categorias = categoriaController.categorias;
       final todasActividades = <Activity>[];
@@ -1533,10 +1579,7 @@ class CategoriasEquiposPage extends StatelessWidget {
     }
   }
 
-  Widget _buildActivityEvaluacionCard(
-    Activity activity,
-    EvaluacionPeriodoController evaluacionController,
-  ) {
+  Widget _buildActivityEvaluacionCard(Activity activity) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
@@ -1562,10 +1605,7 @@ class CategoriasEquiposPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             child: FutureBuilder<List<EvaluacionPeriodo>>(
-              future: _cargarEvaluacionesPorActividad(
-                evaluacionController,
-                activity.id.toString(),
-              ),
+              future: _cargarEvaluacionesPorActividad(activity.id.toString()),
               builder: (context, evaluacionSnapshot) {
                 if (evaluacionSnapshot.connectionState ==
                     ConnectionState.waiting) {
@@ -1644,10 +1684,18 @@ class CategoriasEquiposPage extends StatelessWidget {
   }
 
   Future<List<EvaluacionPeriodo>> _cargarEvaluacionesPorActividad(
-    EvaluacionPeriodoController controller,
     String activityId,
   ) async {
     try {
+      // Obtener controlador de manera segura
+      EvaluacionPeriodoController? controller;
+      try {
+        controller = Get.find<EvaluacionPeriodoController>();
+      } catch (e) {
+        print('EvaluacionPeriodoController no encontrado: $e');
+        return [];
+      }
+
       await controller.cargarEvaluacionesPorActividad(activityId);
       return controller.evaluacionesPorActividad[activityId] ?? [];
     } catch (e) {
